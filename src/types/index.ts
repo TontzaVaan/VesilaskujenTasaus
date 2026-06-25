@@ -8,15 +8,15 @@ export interface Maksu {
   paiva: string;
   osapuoliId: string;
   maara: number;
-  kommentti: string;
+  kommentti?: string;
 }
 
 export interface Vesilasku {
   kuukausi: number; // 1–12
-  erapaiva: string;
+  erapaiva?: string;
   perusmaksu: number;
   kayttomaksu: number;
-  kommentti: string;
+  kommentti?: string;
   liitteet?: string[];
 }
 
