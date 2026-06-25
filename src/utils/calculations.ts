@@ -46,9 +46,12 @@ export function laskeTasaus(
   const kokonaisNelio =
     tontti.op1Neliometrit + tontti.op2Neliometrit;
   const op1TonttiPct =
-    kokonaisNelio > 0 ? tontti.op1Neliometrit / kokonaisNelio : 0.5;
-  const op2TonttiPct =
-    kokonaisNelio > 0 ? tontti.op2Neliometrit / kokonaisNelio : 0.5;
+    tontti.op1KiinteistoveroProsentti !== undefined
+      ? tontti.op1KiinteistoveroProsentti / 100
+      : kokonaisNelio > 0
+        ? tontti.op1Neliometrit / kokonaisNelio
+        : 0.5;
+  const op2TonttiPct = 1 - op1TonttiPct;
 
   const maapohjaVero = vuosiData.kiinteistoveroTontti.maapohjaVero;
   const op1MaapohjaVero = maapohjaVero * op1TonttiPct;

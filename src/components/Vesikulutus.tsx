@@ -4,10 +4,11 @@ import { formatPct } from '../utils/calculations';
 interface Props {
   mittarit: Mittarit;
   osapuolet: [Osapuoli, Osapuoli];
+  lukittu?: boolean;
   onChange: (mittarit: Mittarit) => void;
 }
 
-export default function Vesikulutus({ mittarit, osapuolet, onChange }: Props) {
+export default function Vesikulutus({ mittarit, osapuolet, lukittu, onChange }: Props) {
   const { yhteinen, alamittari } = mittarit;
 
   const yhteinenKulutus = yhteinen.loppuLukema - yhteinen.alkuLukema;
@@ -39,7 +40,8 @@ export default function Vesikulutus({ mittarit, osapuolet, onChange }: Props) {
                 onChange={(e) =>
                   onChange({ ...mittarit, yhteinen: { ...yhteinen, alkuPvm: e.target.value } })
                 }
-                className="border border-gray-200 rounded px-2 py-1.5 w-full text-sm"
+                disabled={lukittu}
+                className="border border-gray-200 rounded px-2 py-1.5 w-full text-sm disabled:bg-gray-50 disabled:text-gray-500"
               />
             </div>
             <div>
@@ -50,7 +52,8 @@ export default function Vesikulutus({ mittarit, osapuolet, onChange }: Props) {
                 onChange={(e) =>
                   onChange({ ...mittarit, yhteinen: { ...yhteinen, alkuLukema: parseFloat(e.target.value) || 0 } })
                 }
-                className="border border-gray-200 rounded px-2 py-1.5 w-full text-sm text-right"
+                disabled={lukittu}
+                className="border border-gray-200 rounded px-2 py-1.5 w-full text-sm text-right disabled:bg-gray-50 disabled:text-gray-500"
               />
             </div>
             <div>
@@ -61,7 +64,8 @@ export default function Vesikulutus({ mittarit, osapuolet, onChange }: Props) {
                 onChange={(e) =>
                   onChange({ ...mittarit, yhteinen: { ...yhteinen, loppuPvm: e.target.value } })
                 }
-                className="border border-gray-200 rounded px-2 py-1.5 w-full text-sm"
+                disabled={lukittu}
+                className="border border-gray-200 rounded px-2 py-1.5 w-full text-sm disabled:bg-gray-50 disabled:text-gray-500"
               />
             </div>
             <div>
@@ -72,7 +76,8 @@ export default function Vesikulutus({ mittarit, osapuolet, onChange }: Props) {
                 onChange={(e) =>
                   onChange({ ...mittarit, yhteinen: { ...yhteinen, loppuLukema: parseFloat(e.target.value) || 0 } })
                 }
-                className="border border-gray-200 rounded px-2 py-1.5 w-full text-sm text-right"
+                disabled={lukittu}
+                className="border border-gray-200 rounded px-2 py-1.5 w-full text-sm text-right disabled:bg-gray-50 disabled:text-gray-500"
               />
             </div>
           </div>
@@ -96,7 +101,8 @@ export default function Vesikulutus({ mittarit, osapuolet, onChange }: Props) {
                 onChange={(e) =>
                   onChange({ ...mittarit, alamittari: { ...alamittari, alkuPvm: e.target.value } })
                 }
-                className="border border-gray-200 rounded px-2 py-1.5 w-full text-sm"
+                disabled={lukittu}
+                className="border border-gray-200 rounded px-2 py-1.5 w-full text-sm disabled:bg-gray-50 disabled:text-gray-500"
               />
             </div>
             <div>
@@ -107,7 +113,8 @@ export default function Vesikulutus({ mittarit, osapuolet, onChange }: Props) {
                 onChange={(e) =>
                   onChange({ ...mittarit, alamittari: { ...alamittari, alkuLukema: parseFloat(e.target.value) || 0 } })
                 }
-                className="border border-gray-200 rounded px-2 py-1.5 w-full text-sm text-right"
+                disabled={lukittu}
+                className="border border-gray-200 rounded px-2 py-1.5 w-full text-sm text-right disabled:bg-gray-50 disabled:text-gray-500"
               />
             </div>
             <div>
@@ -118,7 +125,8 @@ export default function Vesikulutus({ mittarit, osapuolet, onChange }: Props) {
                 onChange={(e) =>
                   onChange({ ...mittarit, alamittari: { ...alamittari, loppuPvm: e.target.value } })
                 }
-                className="border border-gray-200 rounded px-2 py-1.5 w-full text-sm"
+                disabled={lukittu}
+                className="border border-gray-200 rounded px-2 py-1.5 w-full text-sm disabled:bg-gray-50 disabled:text-gray-500"
               />
             </div>
             <div>
@@ -129,7 +137,8 @@ export default function Vesikulutus({ mittarit, osapuolet, onChange }: Props) {
                 onChange={(e) =>
                   onChange({ ...mittarit, alamittari: { ...alamittari, loppuLukema: parseFloat(e.target.value) || 0 } })
                 }
-                className="border border-gray-200 rounded px-2 py-1.5 w-full text-sm text-right"
+                disabled={lukittu}
+                className="border border-gray-200 rounded px-2 py-1.5 w-full text-sm text-right disabled:bg-gray-50 disabled:text-gray-500"
               />
             </div>
           </div>

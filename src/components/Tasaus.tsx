@@ -1,5 +1,6 @@
 import type { VuosiData, AppData } from '../types';
 import { laskeTasaus, formatEuro, formatPct } from '../utils/calculations';
+import Kuvaajat from './Kuvaajat';
 
 interface Props {
   vuosiData: VuosiData;
@@ -164,6 +165,7 @@ export default function Tasaus({ vuosiData, appData }: Props) {
           </tbody>
         </table>
       </div>
+      <Kuvaajat vuosiData={vuosiData} appData={appData} />
     </div>
   );
 }

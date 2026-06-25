@@ -28,14 +28,13 @@ export function tyhjaVuosiData(vuosi: number): VuosiData {
 }
 
 export function defaultAppData(): AppData {
-  const vuosi = new Date().getFullYear();
   return {
     osapuolet: [
       { id: 'op1', nimi: 'Pakarinen' },
       { id: 'op2', nimi: 'Pusa' },
     ],
     tontti: { op1Neliometrit: 0, op2Neliometrit: 0 },
-    vuodet: [tyhjaVuosiData(vuosi)],
+    vuodet: Array.from({ length: 7 }, (_, i) => tyhjaVuosiData(2020 + i)),
   };
 }
 

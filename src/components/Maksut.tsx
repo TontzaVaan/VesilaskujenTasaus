@@ -14,10 +14,11 @@ function uusiMaksu(osapuoliId: string): Maksu {
 interface Props {
   maksut: Maksu[];
   osapuolet: [Osapuoli, Osapuoli];
+  lukittu?: boolean;
   onChange: (maksut: Maksu[]) => void;
 }
 
-export default function Maksut({ maksut, osapuolet, onChange }: Props) {
+export default function Maksut({ maksut, osapuolet, lukittu, onChange }: Props) {
   const paivita = (id: string, kentta: keyof Maksu, arvo: string | number) => {
     onChange(maksut.map((m) => (m.id === id ? { ...m, [kentta]: arvo } : m)));
   };
@@ -68,14 +69,16 @@ export default function Maksut({ maksut, osapuolet, onChange }: Props) {
                     type="date"
                     value={m.paiva}
                     onChange={(e) => paivita(m.id, 'paiva', e.target.value)}
-                    className="border border-gray-200 rounded px-2 py-1 w-36"
+                    disabled={lukittu}
+                    className="border border-gray-200 rounded px-2 py-1 w-36 disabled:bg-gray-50 disabled:text-gray-500"
                   />
                 </td>
                 <td className="py-1.5 pr-3">
                   <select
                     value={m.osapuoliId}
                     onChange={(e) => paivita(m.id, 'osapuoliId', e.target.value)}
-                    className="border border-gray-200 rounded px-2 py-1"
+                    disabled={lukittu}
+                    className="border border-gray-200 rounded px-2 py-1 disabled:bg-gray-50 disabled:text-gray-500"
                   >
                     {osapuolet.map((op) => (
                       <option key={op.id} value={op.id}>
@@ -90,7 +93,8 @@ export default function Maksut({ maksut, osapuolet, onChange }: Props) {
                     value={m.maara || ''}
                     onChange={(e) => paivita(m.id, 'maara', parseFloat(e.target.value) || 0)}
                     step="0.01"
-                    className="border border-gray-200 rounded px-2 py-1 w-28 text-right"
+                    disabled={lukittu}
+                    className="border border-gray-200 rounded px-2 py-1 w-28 text-right disabled:bg-gray-50 disabled:text-gray-500"
                   />
                 </td>
                 <td className="py-1.5 pr-3">
@@ -98,36 +102,41 @@ export default function Maksut({ maksut, osapuolet, onChange }: Props) {
                     type="text"
                     value={m.kommentti}
                     onChange={(e) => paivita(m.id, 'kommentti', e.target.value)}
-                    className="border border-gray-200 rounded px-2 py-1 w-full min-w-40"
+                    disabled={lukittu}
+                    className="border border-gray-200 rounded px-2 py-1 w-full min-w-40 disabled:bg-gray-50 disabled:text-gray-500"
                     placeholder="Kommentti"
                   />
                 </td>
-                <td className="py-1.5">
-                  <button
-                    onClick={() => poista(m.id)}
-                    className="text-red-400 hover:text-red-600 text-lg leading-none px-1"
-                    title="Poista"
-                  >
-                    ×
-                  </button>
-                </td>
+                {!lukittu && (
+                  <td className="py-1.5">
+                    <button
+                      onClick={() => poista(m.id)}
+                      className="text-red-400 hover:text-red-600 text-lg leading-none px-1"
+                      title="Poista"
+                    >
+                      ×
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      <div className="flex gap-2 mt-3">
-        {osapuolet.map((op) => (
-          <button
-            key={op.id}
-            onClick={() => lisaa(op.id)}
-            className="text-sm bg-white border border-gray-300 hover:bg-gray-50 rounded px-3 py-1.5"
-          >
-            + Lisää maksu ({op.nimi})
-          </button>
-        ))}
-      </div>
+      {!lukittu && (
+        <div className="flex gap-2 mt-3">
+          {osapuolet.map((op) => (
+            <button
+              key={op.id}
+              onClick={() => lisaa(op.id)}
+              className="text-sm bg-white border border-gray-300 hover:bg-gray-50 rounded px-3 py-1.5"
+            >
+              + Lisää maksu ({op.nimi})
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

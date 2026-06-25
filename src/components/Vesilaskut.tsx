@@ -1,16 +1,18 @@
 import type { Vesilasku } from '../types';
 import { KUUKAUDET, formatEuro } from '../utils/calculations';
+import Liitteet from './Liitteet';
 
 interface Props {
   vesilaskut: Vesilasku[];
+  lukittu?: boolean;
   onChange: (vesilaskut: Vesilasku[]) => void;
 }
 
-export default function Vesilaskut({ vesilaskut, onChange }: Props) {
+export default function Vesilaskut({ vesilaskut, lukittu, onChange }: Props) {
   const paivita = (
     kuukausi: number,
     kentta: keyof Vesilasku,
-    arvo: string | number
+    arvo: string | number | string[]
   ) => {
     onChange(
       vesilaskut.map((v) =>
@@ -51,7 +53,8 @@ export default function Vesilaskut({ vesilaskut, onChange }: Props) {
               <th className="pb-2 pr-3 font-medium text-right">Perusmaksu €</th>
               <th className="pb-2 pr-3 font-medium text-right">Käyttömaksu €</th>
               <th className="pb-2 pr-3 font-medium text-right">Yhteensä €</th>
-              <th className="pb-2 font-medium">Kommentti</th>
+              <th className="pb-2 pr-3 font-medium">Kommentti</th>
+              <th className="pb-2 font-medium">Liitteet</th>
             </tr>
           </thead>
           <tbody>
@@ -68,7 +71,8 @@ export default function Vesilaskut({ vesilaskut, onChange }: Props) {
                     type="date"
                     value={v.erapaiva}
                     onChange={(e) => paivita(v.kuukausi, 'erapaiva', e.target.value)}
-                    className="border border-gray-200 rounded px-2 py-1 w-36"
+                    disabled={lukittu}
+                    className="border border-gray-200 rounded px-2 py-1 w-36 disabled:bg-gray-50 disabled:text-gray-500"
                   />
                 </td>
                 <td className="py-1.5 pr-3">
@@ -79,7 +83,8 @@ export default function Vesilaskut({ vesilaskut, onChange }: Props) {
                       paivita(v.kuukausi, 'perusmaksu', parseFloat(e.target.value) || 0)
                     }
                     step="0.01"
-                    className="border border-gray-200 rounded px-2 py-1 w-28 text-right"
+                    disabled={lukittu}
+                    className="border border-gray-200 rounded px-2 py-1 w-28 text-right disabled:bg-gray-50 disabled:text-gray-500"
                   />
                 </td>
                 <td className="py-1.5 pr-3">
@@ -90,19 +95,28 @@ export default function Vesilaskut({ vesilaskut, onChange }: Props) {
                       paivita(v.kuukausi, 'kayttomaksu', parseFloat(e.target.value) || 0)
                     }
                     step="0.01"
-                    className="border border-gray-200 rounded px-2 py-1 w-28 text-right"
+                    disabled={lukittu}
+                    className="border border-gray-200 rounded px-2 py-1 w-28 text-right disabled:bg-gray-50 disabled:text-gray-500"
                   />
                 </td>
                 <td className="py-1.5 pr-3 text-right font-medium text-gray-700">
                   {formatEuro(v.perusmaksu + v.kayttomaksu)}
                 </td>
-                <td className="py-1.5">
+                <td className="py-1.5 pr-3">
                   <input
                     type="text"
                     value={v.kommentti}
                     onChange={(e) => paivita(v.kuukausi, 'kommentti', e.target.value)}
-                    className="border border-gray-200 rounded px-2 py-1 w-full min-w-40"
+                    disabled={lukittu}
+                    className="border border-gray-200 rounded px-2 py-1 w-full min-w-40 disabled:bg-gray-50 disabled:text-gray-500"
                     placeholder="Kommentti"
+                  />
+                </td>
+                <td className="py-1.5">
+                  <Liitteet
+                    liiteIds={v.liitteet ?? []}
+                    onChange={(ids) => paivita(v.kuukausi, 'liitteet', ids)}
+                    label="Lisää lasku"
                   />
                 </td>
               </tr>
@@ -115,6 +129,7 @@ export default function Vesilaskut({ vesilaskut, onChange }: Props) {
               <td className="py-2 pr-3 text-right">{formatEuro(totalPerusmaksu)}</td>
               <td className="py-2 pr-3 text-right">{formatEuro(totalKayttomaksu)}</td>
               <td className="py-2 pr-3 text-right">{formatEuro(totalYhteensa)}</td>
+              <td className="py-2"></td>
               <td className="py-2"></td>
             </tr>
           </tfoot>

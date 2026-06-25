@@ -1,5 +1,7 @@
+import React from 'react';
 import type { KiinteistoveroTontti, RakennusVero, Osapuoli, Tontti } from '../types';
 import { formatEuro, formatPct } from '../utils/calculations';
+import Liitteet from './Liitteet';
 
 function uusiRakennusvero(omistajaId: string): RakennusVero {
   return { id: crypto.randomUUID(), nimi: '', omistajaId, maara: 0 };
@@ -10,6 +12,7 @@ interface Props {
   rakennusverot: RakennusVero[];
   osapuolet: [Osapuoli, Osapuoli];
   tontti: Tontti;
+  lukittu?: boolean;
   onChange: (tontti: KiinteistoveroTontti, rakennusverot: RakennusVero[]) => void;
 }
 
@@ -18,16 +21,24 @@ export default function Kiinteistovero({
   rakennusverot,
   osapuolet,
   tontti,
+  lukittu,
   onChange,
 }: Props) {
   const kokonaisNelio = tontti.op1Neliometrit + tontti.op2Neliometrit;
-  const op1Pct = kokonaisNelio > 0 ? tontti.op1Neliometrit / kokonaisNelio : 0.5;
-  const op2Pct = kokonaisNelio > 0 ? tontti.op2Neliometrit / kokonaisNelio : 0.5;
+  const op1PctRaw =
+    tontti.op1KiinteistoveroProsentti !== undefined
+      ? tontti.op1KiinteistoveroProsentti / 100
+      : kokonaisNelio > 0
+        ? tontti.op1Neliometrit / kokonaisNelio
+        : 0.5;
+  const op1Pct = op1PctRaw;
+  const op2Pct = 1 - op1Pct;
+  const kayttaaProsenttia = tontti.op1KiinteistoveroProsentti !== undefined;
 
   const op1MaapohjaVero = kiinteistoveroTontti.maapohjaVero * op1Pct;
   const op2MaapohjaVero = kiinteistoveroTontti.maapohjaVero * op2Pct;
 
-  const paivitaRakennus = (id: string, kentta: keyof RakennusVero, arvo: string | number) => {
+  const paivitaRakennus = (id: string, kentta: keyof RakennusVero, arvo: string | number | string[]) => {
     onChange(
       kiinteistoveroTontti,
       rakennusverot.map((r) => (r.id === id ? { ...r, [kentta]: arvo } : r))
@@ -75,14 +86,24 @@ export default function Kiinteistovero({
                 )
               }
               step="0.01"
-              className="border border-gray-200 rounded px-3 py-1.5 w-36 text-right"
+              disabled={lukittu}
+              className="border border-gray-200 rounded px-3 py-1.5 w-36 text-right disabled:bg-gray-50 disabled:text-gray-500"
             />
           </div>
           <div className="text-sm text-gray-500">
-            Jako: {osapuolet[0].nimi} {tontti.op1Neliometrit} m² ({formatPct(op1Pct)}) /{' '}
-            {osapuolet[1].nimi} {tontti.op2Neliometrit} m² ({formatPct(op2Pct)})
+            {kayttaaProsenttia ? (
+              <>Jako: {osapuolet[0].nimi} {formatPct(op1Pct)} / {osapuolet[1].nimi} {formatPct(op2Pct)} (konfiguroitu)</>
+            ) : (
+              <>Jako: {osapuolet[0].nimi} {tontti.op1Neliometrit} m² ({formatPct(op1Pct)}) /{' '}
+              {osapuolet[1].nimi} {tontti.op2Neliometrit} m² ({formatPct(op2Pct)})</>
+            )}
           </div>
         </div>
+        <Liitteet
+          liiteIds={kiinteistoveroTontti.liitteet ?? []}
+          onChange={(ids) => onChange({ ...kiinteistoveroTontti, liitteet: ids }, rakennusverot)}
+          label="Lisää tonttiverolasku"
+        />
 
         <div className="bg-gray-50 rounded-lg p-4">
           <table className="text-sm w-full max-w-md">
@@ -128,13 +149,15 @@ export default function Kiinteistovero({
             </thead>
             <tbody>
               {rakennusverot.map((r) => (
-                <tr key={r.id} className="border-b border-gray-100 hover:bg-gray-50">
+                <React.Fragment key={r.id}>
+                <tr className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="py-1.5 pr-3">
                     <input
                       type="text"
                       value={r.nimi}
                       onChange={(e) => paivitaRakennus(r.id, 'nimi', e.target.value)}
-                      className="border border-gray-200 rounded px-2 py-1 w-40"
+                      disabled={lukittu}
+                      className="border border-gray-200 rounded px-2 py-1 w-40 disabled:bg-gray-50 disabled:text-gray-500"
                       placeholder="esim. Pakarisen talo"
                     />
                   </td>
@@ -142,7 +165,8 @@ export default function Kiinteistovero({
                     <select
                       value={r.omistajaId}
                       onChange={(e) => paivitaRakennus(r.id, 'omistajaId', e.target.value)}
-                      className="border border-gray-200 rounded px-2 py-1"
+                      disabled={lukittu}
+                      className="border border-gray-200 rounded px-2 py-1 disabled:bg-gray-50 disabled:text-gray-500"
                     >
                       {osapuolet.map((op) => (
                         <option key={op.id} value={op.id}>{op.nimi}</option>
@@ -155,34 +179,49 @@ export default function Kiinteistovero({
                       value={r.maara || ''}
                       onChange={(e) => paivitaRakennus(r.id, 'maara', parseFloat(e.target.value) || 0)}
                       step="0.01"
-                      className="border border-gray-200 rounded px-2 py-1 w-28 text-right"
+                      disabled={lukittu}
+                      className="border border-gray-200 rounded px-2 py-1 w-28 text-right disabled:bg-gray-50 disabled:text-gray-500"
                     />
                   </td>
-                  <td className="py-1.5">
-                    <button
-                      onClick={() => poistaRakennus(r.id)}
-                      className="text-red-400 hover:text-red-600 text-lg leading-none px-1"
-                    >
-                      ×
-                    </button>
+                  {!lukittu && (
+                    <td className="py-1.5">
+                      <button
+                        onClick={() => poistaRakennus(r.id)}
+                        className="text-red-400 hover:text-red-600 text-lg leading-none px-1"
+                      >
+                        ×
+                      </button>
+                    </td>
+                  )}
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td colSpan={4} className="pb-2 pl-2">
+                    <Liitteet
+                      liiteIds={r.liitteet ?? []}
+                      onChange={(ids) => paivitaRakennus(r.id, 'liitteet', ids)}
+                      label="Lisää rakennusverolasku"
+                    />
                   </td>
                 </tr>
+                </React.Fragment>
               ))}
             </tbody>
           </table>
         )}
 
-        <div className="flex gap-2 mb-4">
-          {osapuolet.map((op) => (
-            <button
-              key={op.id}
-              onClick={() => lisaaRakennus(op.id)}
-              className="text-sm bg-white border border-gray-300 hover:bg-gray-50 rounded px-3 py-1.5"
-            >
-              + Lisää rakennus ({op.nimi})
-            </button>
-          ))}
-        </div>
+        {!lukittu && (
+          <div className="flex gap-2 mb-4">
+            {osapuolet.map((op) => (
+              <button
+                key={op.id}
+                onClick={() => lisaaRakennus(op.id)}
+                className="text-sm bg-white border border-gray-300 hover:bg-gray-50 rounded px-3 py-1.5"
+              >
+                + Lisää rakennus ({op.nimi})
+              </button>
+            ))}
+          </div>
+        )}
 
         {rakennusverot.length > 0 && (
           <div className="bg-gray-50 rounded-lg p-4">

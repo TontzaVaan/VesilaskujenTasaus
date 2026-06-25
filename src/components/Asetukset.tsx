@@ -12,6 +12,9 @@ export default function Asetukset({ appData, onSave, onClose }: Props) {
   const [op2Nimi, setOp2Nimi] = useState(appData.osapuolet[1].nimi);
   const [op1Nelio, setOp1Nelio] = useState(appData.tontti.op1Neliometrit);
   const [op2Nelio, setOp2Nelio] = useState(appData.tontti.op2Neliometrit);
+  const [kiinteistoveroProsentti, setKiinteistoveroProsentti] = useState<number | ''>(
+    appData.tontti.op1KiinteistoveroProsentti ?? ''
+  );
 
   const tallenna = () => {
     onSave(
@@ -19,7 +22,12 @@ export default function Asetukset({ appData, onSave, onClose }: Props) {
         { ...appData.osapuolet[0], nimi: op1Nimi },
         { ...appData.osapuolet[1], nimi: op2Nimi },
       ],
-      { op1Neliometrit: op1Nelio, op2Neliometrit: op2Nelio }
+      {
+        op1Neliometrit: op1Nelio,
+        op2Neliometrit: op2Nelio,
+        op1KiinteistoveroProsentti:
+          kiinteistoveroProsentti === '' ? undefined : kiinteistoveroProsentti,
+      }
     );
     onClose();
   };
@@ -86,6 +94,49 @@ export default function Asetukset({ appData, onSave, onClose }: Props) {
                 {op2Nimi}: {((op2Nelio / (op1Nelio + op2Nelio)) * 100).toFixed(1)} %
               </p>
             )}
+          </div>
+          <div className="border-t border-gray-200 pt-4">
+            <h3 className="text-sm font-medium text-gray-700 mb-1">
+              Kiinteistöveron jako-% ({op1Nimi})
+            </h3>
+            <p className="text-xs text-gray-500 mb-2">
+              Jos asetettu, käytetään tätä tonttiveron jakoon. Muuten lasketaan m²-suhteesta.
+            </p>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={kiinteistoveroProsentti}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === '') {
+                    setKiinteistoveroProsentti('');
+                  } else {
+                    setKiinteistoveroProsentti(
+                      Math.min(100, Math.max(0, parseFloat(v) || 0))
+                    );
+                  }
+                }}
+                min={0}
+                max={100}
+                step="0.1"
+                placeholder="esim. 58.3"
+                className="border border-gray-300 rounded-lg px-3 py-2 w-28 text-right"
+              />
+              <span className="text-sm text-gray-500">%</span>
+              {kiinteistoveroProsentti !== '' && (
+                <span className="text-xs text-gray-400">
+                  {op2Nimi}: {(100 - kiinteistoveroProsentti).toFixed(1)} %
+                </span>
+              )}
+              {kiinteistoveroProsentti !== '' && (
+                <button
+                  onClick={() => setKiinteistoveroProsentti('')}
+                  className="text-xs text-red-400 hover:text-red-600"
+                >
+                  Poista
+                </button>
+              )}
+            </div>
           </div>
         </div>
 

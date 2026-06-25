@@ -17,6 +17,7 @@ export interface Vesilasku {
   perusmaksu: number;
   kayttomaksu: number;
   kommentti: string;
+  liitteet?: string[];
 }
 
 export interface Mittarilukema {
@@ -33,6 +34,7 @@ export interface Mittarit {
 
 export interface KiinteistoveroTontti {
   maapohjaVero: number;
+  liitteet?: string[];
 }
 
 export interface RakennusVero {
@@ -40,6 +42,7 @@ export interface RakennusVero {
   nimi: string;
   omistajaId: string;
   maara: number;
+  liitteet?: string[];
 }
 
 export interface MuuKulu {
@@ -48,10 +51,14 @@ export interface MuuKulu {
   paiva: string;
   yhteensa: number;
   op1Prosentti: number; // 0–100
+  liitteet?: string[];
 }
+
+export type VuosiStatus = 'uusi' | 'kesken' | 'katselmoinnissa' | 'valmis';
 
 export interface VuosiData {
   vuosi: number;
+  status?: VuosiStatus;
   maksut: Maksu[];
   vesilaskut: Vesilasku[];
   mittarit: Mittarit;
@@ -63,6 +70,7 @@ export interface VuosiData {
 export interface Tontti {
   op1Neliometrit: number;
   op2Neliometrit: number;
+  op1KiinteistoveroProsentti?: number; // 0–100; if set, overrides m² calculation
 }
 
 export interface AppData {
