@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import type { VuosiData, AppData } from '../types';
 import { laskeTasaus, formatEuro, formatPct } from '../utils/calculations';
 import Kuvaajat from './Kuvaajat';
@@ -11,6 +12,16 @@ interface Props {
 export default function Tasaus({ vuosiData, appData }: Props) {
   const { osapuolet, tontti } = appData;
   const t = laskeTasaus(vuosiData, tontti, osapuolet[0].id, osapuolet[1].id);
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const tulostaaPDF = () => {
+    const el = printRef.current;
+    if (!el) return;
+    const orig = document.title;
+    document.title = `Tasaus-${vuosiData.vuosi}`;
+    window.print();
+    document.title = orig;
+  };
 
   const maksaja = t.tasausErotus > 0
     ? (t.maksajaId === osapuolet[0].id ? osapuolet[0].nimi : osapuolet[1].nimi)
@@ -22,9 +33,25 @@ export default function Tasaus({ vuosiData, appData }: Props) {
   const saldoColor = (s: number) =>
     s > 0 ? 'text-green-700' : s < 0 ? 'text-red-700' : 'text-gray-700';
 
+  // Last 5 years (excluding current) for comparison
+  const vertailuVuodet = [...appData.vuodet]
+    .filter((v) => v.vuosi < vuosiData.vuosi)
+    .sort((a, b) => b.vuosi - a.vuosi)
+    .slice(0, 5)
+    .reverse();
+
   return (
-    <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-gray-800">Vuosittainen tasaus</h2>
+    <div className="space-y-6" ref={printRef}>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-800">Vuosittainen tasaus {vuosiData.vuosi}</h2>
+        <button
+          onClick={tulostaaPDF}
+          className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 print:hidden"
+          title="Tulosta / tallenna PDF"
+        >
+          ↓ PDF
+        </button>
+      </div>
 
       {/* Tasauslaatikko */}
       {t.tasausErotus > 0.005 ? (
@@ -165,6 +192,61 @@ export default function Tasaus({ vuosiData, appData }: Props) {
           </tbody>
         </table>
       </div>
+      {/* Vertailu edellisiin vuosiin */}
+      {vertailuVuodet.length > 0 && (
+        <div className="border border-gray-200 rounded-lg p-4">
+          <h3 className="font-semibold text-gray-700 mb-3">Vertailu – viimeiset {vertailuVuodet.length} vuotta</h3>
+          <div className="overflow-x-auto">
+            <table className="text-sm w-full">
+              <thead>
+                <tr className="border-b border-gray-200 text-gray-500">
+                  <th className="pb-1.5 text-left font-medium">Vuosi</th>
+                  <th className="pb-1.5 text-right font-medium">{osapuolet[0].nimi} maksut</th>
+                  <th className="pb-1.5 text-right font-medium">{osapuolet[1].nimi} maksut</th>
+                  <th className="pb-1.5 text-right font-medium">Vesi yht.</th>
+                  <th className="pb-1.5 text-right font-medium">Kiinteistövero yht.</th>
+                  <th className="pb-1.5 text-right font-medium">Muut kulut</th>
+                  <th className="pb-1.5 text-right font-medium">{osapuolet[0].nimi} saldo</th>
+                  <th className="pb-1.5 text-right font-medium">{osapuolet[1].nimi} saldo</th>
+                  <th className="pb-1.5 text-right font-medium">Tasaus €</th>
+                  <th className="pb-1.5 text-left font-medium pl-2">Maksaja</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...vertailuVuodet, vuosiData].map((v) => {
+                  const tv = laskeTasaus(v, tontti, osapuolet[0].id, osapuolet[1].id);
+                  const isCurrentYear = v.vuosi === vuosiData.vuosi;
+                  const maks = tv.tasausErotus > 0.005
+                    ? (tv.maksajaId === osapuolet[0].id ? osapuolet[0].nimi : osapuolet[1].nimi)
+                    : '–';
+                  return (
+                    <tr
+                      key={v.vuosi}
+                      className={`border-b border-gray-100 ${isCurrentYear ? 'font-semibold bg-blue-50' : ''}`}
+                    >
+                      <td className="py-1.5">{v.vuosi}{isCurrentYear && ' ★'}</td>
+                      <td className="py-1.5 text-right">{formatEuro(tv.op1Maksut)}</td>
+                      <td className="py-1.5 text-right">{formatEuro(tv.op2Maksut)}</td>
+                      <td className="py-1.5 text-right">{formatEuro(tv.op1VesiKulut + tv.op2VesiKulut)}</td>
+                      <td className="py-1.5 text-right">{formatEuro(tv.op1MaapohjaVero + tv.op2MaapohjaVero + tv.op1RakennusVero + tv.op2RakennusVero)}</td>
+                      <td className="py-1.5 text-right">{formatEuro(tv.op1MuutKulut + tv.op2MuutKulut)}</td>
+                      <td className={`py-1.5 text-right ${tv.op1Saldo >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                        {tv.op1Saldo > 0 ? '+' : ''}{formatEuro(tv.op1Saldo)}
+                      </td>
+                      <td className={`py-1.5 text-right ${tv.op2Saldo >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                        {tv.op2Saldo > 0 ? '+' : ''}{formatEuro(tv.op2Saldo)}
+                      </td>
+                      <td className="py-1.5 text-right">{tv.tasausErotus > 0.005 ? formatEuro(tv.tasausErotus) : '–'}</td>
+                      <td className="py-1.5 pl-2">{maks}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       <Kuvaajat vuosiData={vuosiData} appData={appData} />
     </div>
   );

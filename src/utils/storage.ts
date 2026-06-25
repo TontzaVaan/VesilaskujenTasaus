@@ -1,4 +1,4 @@
-import type { AppData, VuosiData, Mittarit } from '../types';
+import type { AppData, VuosiData, Mittarit, VuosiStatus } from '../types';
 
 const STORAGE_KEY = 'onnenkoukku-data';
 
@@ -28,13 +28,18 @@ export function tyhjaVuosiData(vuosi: number): VuosiData {
 }
 
 export function defaultAppData(): AppData {
+  const historia = Array.from({ length: 5 }, (_, i) => ({
+    ...tyhjaVuosiData(2020 + i),
+    status: 'valmis' as VuosiStatus,
+  }));
+  const aktiivinenVuosi = { ...tyhjaVuosiData(2025), status: 'kesken' as VuosiStatus };
   return {
     osapuolet: [
       { id: 'op1', nimi: 'Pakarinen' },
       { id: 'op2', nimi: 'Pusa' },
     ],
     tontti: { op1Neliometrit: 0, op2Neliometrit: 0 },
-    vuodet: Array.from({ length: 7 }, (_, i) => tyhjaVuosiData(2020 + i)),
+    vuodet: [...historia, aktiivinenVuosi],
   };
 }
 
