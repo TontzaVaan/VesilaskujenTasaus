@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useAppData } from './hooks/useAppData';
 import { tyhjaVuosiData } from './utils/storage';
+import { exportExcel, exportJSON, importJSON } from './utils/exportImport';
 import type { VuosiStatus } from './types';
 import Maksut from './components/Maksut';
 import Vesilaskut from './components/Vesilaskut';
@@ -48,7 +49,9 @@ function statusBadgeClass(status: VuosiStatus | undefined): string {
 }
 
 export default function App() {
-  const { data, paivitaVuosi, lisaaVuosi, paivitaAsetukset } = useAppData();
+  const { data, paivitaVuosi, lisaaVuosi, paivitaAsetukset, alustaData } = useAppData();
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const [importVirhe, setImportVirhe] = useState<string | null>(null);
   const [nakyma, setNakyma] = useState<number | 'historia'>(() => {
     const vuodet = data.vuodet.map((v) => v.vuosi).sort();
     return vuodet[vuodet.length - 1] ?? new Date().getFullYear();
@@ -72,6 +75,22 @@ export default function App() {
     setUusiVuosiInput('');
   };
 
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const uusiData = await importJSON(file);
+      alustaData(uusiData);
+      setImportVirhe(null);
+      const vuodet = uusiData.vuodet.map((v) => v.vuosi).sort((a, b) => a - b);
+      setNakyma(vuodet[vuodet.length - 1] ?? new Date().getFullYear());
+    } catch (err) {
+      setImportVirhe(err instanceof Error ? err.message : 'Tuntematon virhe');
+    } finally {
+      if (importInputRef.current) importInputRef.current.value = '';
+    }
+  };
+
   const paivitaStatus = (status: VuosiStatus) => {
     if (!aktiivinen) return;
     paivitaVuosi(aktiivinen.vuosi, { status });
@@ -85,12 +104,41 @@ export default function App() {
           <h1 className="text-xl font-bold text-gray-900">Onnenkoukku</h1>
           <p className="text-sm text-gray-500">Laskujen tasaus</p>
         </div>
-        <button
-          onClick={() => setAsetuksetAuki(true)}
-          className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5"
-        >
-          ⚙ Asetukset
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => exportExcel(data)}
+            className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5"
+            title="Vie Excel-tiedostona"
+          >
+            ↓ Excel
+          </button>
+          <button
+            onClick={() => exportJSON(data)}
+            className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5"
+            title="Vie varmuuskopio (JSON)"
+          >
+            ↓ Varmuuskopio
+          </button>
+          <label
+            className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 cursor-pointer"
+            title="Tuo varmuuskopiosta (JSON)"
+          >
+            ↑ Tuo data
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleImport}
+              className="hidden"
+            />
+          </label>
+          <button
+            onClick={() => setAsetuksetAuki(true)}
+            className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5"
+          >
+            ⚙ Asetukset
+          </button>
+        </div>
       </header>
 
       {/* Vuosinavigointi */}
@@ -249,6 +297,13 @@ export default function App() {
           </>
         ) : null}
       </main>
+
+      {importVirhe && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-red-50 border border-red-300 rounded-lg px-4 py-3 text-sm text-red-800 shadow-lg z-50 flex items-center gap-3">
+          <span>Tuonti epäonnistui: {importVirhe}</span>
+          <button onClick={() => setImportVirhe(null)} className="text-red-400 hover:text-red-600 text-lg leading-none">×</button>
+        </div>
+      )}
 
       {asetuksetAuki && (
         <Asetukset

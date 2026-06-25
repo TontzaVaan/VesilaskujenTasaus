@@ -52,5 +52,10 @@ export function useAppData() {
     []
   );
 
-  return { data, paivita, paivitaVuosi, lisaaVuosi, paivitaAsetukset };
+  const alustaData = useCallback((uusiData: AppData) => {
+    setData(uusiData);
+    tallennaData(uusiData);
+  }, []);
+
+  return { data, paivita, paivitaVuosi, lisaaVuosi, paivitaAsetukset, alustaData };
 }
