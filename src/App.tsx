@@ -394,6 +394,7 @@ export default function App() {
                   vuosi={aktiivinen.vuosi}
                   mittarit={aktiivinen.mittarit}
                   vesimittarit={data.vesimittarit ?? []}
+                  edellinenMittarit={edellinenVuosi?.mittarit}
                   osapuolet={data.osapuolet}
                   lukittu={lukittu}
                   onChange={(mittarit) => paivitaVuosi(aktiivinen.vuosi, { mittarit })}

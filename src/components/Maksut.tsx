@@ -30,6 +30,8 @@ export default function Maksut({ maksut, osapuolet, lukittu, onChange }: Props) 
 
   const op1Sum = maksut.filter(m => m.osapuoliId === osapuolet[0].id).reduce((s, m) => s + m.maara, 0);
   const op2Sum = maksut.filter(m => m.osapuoliId === osapuolet[1].id).reduce((s, m) => s + m.maara, 0);
+  const op1SV = maksut.filter(m => m.osapuoliId === osapuolet[0].id && m.suoraveloitettu).reduce((s, m) => s + m.maara, 0);
+  const op2SV = maksut.filter(m => m.osapuoliId === osapuolet[1].id && m.suoraveloitettu).reduce((s, m) => s + m.maara, 0);
 
   const sorted = [...maksut].sort((a, b) => a.paiva.localeCompare(b.paiva));
 
@@ -39,16 +41,26 @@ export default function Maksut({ maksut, osapuolet, lukittu, onChange }: Props) 
         Osakeyhtiön tilille maksetut summat
       </h2>
 
-      <div className="flex gap-6 mb-4">
-        {osapuolet.map((op) => (
-          <div key={op.id} className="bg-blue-50 rounded-lg px-4 py-2 text-sm">
-            <span className="text-gray-500">{op.nimi} yhteensä: </span>
-            <span className="font-semibold text-blue-800">
-              {formatEuro(op.id === osapuolet[0].id ? op1Sum : op2Sum)}
-            </span>
-          </div>
-        ))}
+      <div className="flex gap-6 mb-4 flex-wrap">
+        {osapuolet.map((op) => {
+          const sum = op.id === osapuolet[0].id ? op1Sum : op2Sum;
+          const sv = op.id === osapuolet[0].id ? op1SV : op2SV;
+          return (
+            <div key={op.id} className="bg-blue-50 rounded-lg px-4 py-2 text-sm">
+              <span className="text-gray-500">{op.nimi} yhteensä: </span>
+              <span className="font-semibold text-blue-800">{formatEuro(sum)}</span>
+              {sv > 0 && (
+                <span className="ml-2 text-xs text-orange-600">(joista SV {formatEuro(sv)})</span>
+              )}
+            </div>
+          );
+        })}
       </div>
+      {(op1SV > 0 || op2SV > 0) && (
+        <div className="mb-3 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2 text-xs text-orange-800">
+          SV = Suoraveloitettu — maksettu suoraan omalta tililtä. Nämä lasketaan mukaan henkilön maksamiin summiin.
+        </div>
+      )}
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -56,14 +68,15 @@ export default function Maksut({ maksut, osapuolet, lukittu, onChange }: Props) 
             <tr className="border-b border-gray-200 text-left text-gray-500">
               <th className="pb-2 pr-3 font-medium">Päivämäärä</th>
               <th className="pb-2 pr-3 font-medium">Osapuoli</th>
-              <th className="pb-2 pr-3 font-medium">Summa €</th>
+              <th className="pb-2 pr-3 font-medium text-right">Summa €</th>
               <th className="pb-2 pr-3 font-medium">Kommentti</th>
+              <th className="pb-2 pr-3 font-medium text-center" title="Suoraveloitettu — maksettu suoraan omalta tililtä">SV</th>
               <th className="pb-2 font-medium"></th>
             </tr>
           </thead>
           <tbody>
             {sorted.map((m) => (
-              <tr key={m.id} className="border-b border-gray-100 hover:bg-gray-50">
+              <tr key={m.id} className={`border-b border-gray-100 hover:bg-gray-50 ${m.suoraveloitettu ? 'bg-orange-50' : ''}`}>
                 <td className="py-1.5 pr-3">
                   <input
                     type="date"
@@ -100,11 +113,21 @@ export default function Maksut({ maksut, osapuolet, lukittu, onChange }: Props) 
                 <td className="py-1.5 pr-3">
                   <input
                     type="text"
-                    value={m.kommentti}
+                    value={m.kommentti ?? ''}
                     onChange={(e) => paivita(m.id, 'kommentti', e.target.value)}
                     disabled={lukittu}
                     className="border border-gray-200 rounded px-2 py-1 w-full min-w-40 disabled:bg-gray-50 disabled:text-gray-500"
                     placeholder="Kommentti"
+                  />
+                </td>
+                <td className="py-1.5 pr-3 text-center">
+                  <input
+                    type="checkbox"
+                    checked={!!m.suoraveloitettu}
+                    onChange={(e) => onChange(maksut.map((x) => x.id === m.id ? { ...x, suoraveloitettu: e.target.checked } : x))}
+                    disabled={lukittu}
+                    title="Suoraveloitettu — maksettu suoraan omalta tililtä (ei tilisiirto osakeyhtiön tilille)"
+                    className="w-4 h-4 accent-orange-500"
                   />
                 </td>
                 {!lukittu && (

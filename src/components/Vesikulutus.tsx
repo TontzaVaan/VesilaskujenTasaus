@@ -5,13 +5,14 @@ interface Props {
   vuosi: number;
   mittarit: Mittarit;
   vesimittarit: VesimittariLukema[];
+  edellinenMittarit?: Mittarit;
   osapuolet: [Osapuoli, Osapuoli];
   lukittu?: boolean;
   onChange: (mittarit: Mittarit) => void;
   onAsetuksetClick?: () => void;
 }
 
-export default function Vesikulutus({ vuosi, mittarit, vesimittarit, osapuolet, lukittu, onChange, onAsetuksetClick }: Props) {
+export default function Vesikulutus({ vuosi, mittarit, vesimittarit, edellinenMittarit, osapuolet, lukittu, onChange, onAsetuksetClick }: Props) {
   const globalKulutus = laskeVuosikulutus(vuosi, vesimittarit);
 
   // op1 = Pakarinen (alamittari), op2 = Pusa (päämittari)
@@ -128,6 +129,23 @@ export default function Vesikulutus({ vuosi, mittarit, vesimittarit, osapuolet, 
           </button>
         )}
       </div>
+      {!lukittu && edellinenMittarit && (edellinenMittarit.yhteinen.loppuLukema > 0 || edellinenMittarit.alamittari.loppuLukema > 0) && (
+        <div className="mb-4 flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 text-sm">
+          <span className="text-blue-800">
+            Edellinen vuosi ({vuosi - 1}): päämittari loppu {edellinenMittarit.yhteinen.loppuLukema} m³,
+            alamittari loppu {edellinenMittarit.alamittari.loppuLukema} m³
+          </span>
+          <button
+            onClick={() => onChange({
+              yhteinen: { ...mittarit.yhteinen, alkuLukema: edellinenMittarit.yhteinen.loppuLukema, alkuPvm: edellinenMittarit.yhteinen.loppuPvm },
+              alamittari: { ...mittarit.alamittari, alkuLukema: edellinenMittarit.alamittari.loppuLukema, alkuPvm: edellinenMittarit.alamittari.loppuPvm },
+            })}
+            className="text-xs bg-blue-600 text-white rounded px-3 py-1 hover:bg-blue-700 whitespace-nowrap"
+          >
+            Kopioi alkuarvoiksi
+          </button>
+        </div>
+      )}
       <p className="text-sm text-gray-500 mb-6">
         {op2Nimi}n päämittari mittaa koko kiinteistön vedenkulutuksen.{' '}
         {op1Nimi}n alamittari mittaa {op1Nimi}n kulutuksen.{' '}

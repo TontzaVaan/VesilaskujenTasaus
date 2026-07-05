@@ -9,6 +9,7 @@ export interface Maksu {
   osapuoliId: string;
   maara: number;
   kommentti?: string;
+  suoraveloitettu?: boolean;
 }
 
 export interface Vesilasku {
