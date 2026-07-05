@@ -1,17 +1,18 @@
 import { useRef } from 'react';
 import type { VuosiData, AppData } from '../types';
-import { laskeTasaus, formatEuro, formatPct } from '../utils/calculations';
+import { laskeTasaus, tunnistaDublikaatit, formatEuro, formatPct } from '../utils/calculations';
 import Kuvaajat from './Kuvaajat';
 
 interface Props {
   vuosiData: VuosiData;
   appData: AppData;
+  dublikaattiKuukaudet?: Set<number>;
 }
 
 
-export default function Tasaus({ vuosiData, appData }: Props) {
+export default function Tasaus({ vuosiData, appData, dublikaattiKuukaudet }: Props) {
   const { osapuolet, tontti } = appData;
-  const t = laskeTasaus(vuosiData, tontti, osapuolet[0].id, osapuolet[1].id);
+  const t = laskeTasaus(vuosiData, tontti, osapuolet[0].id, osapuolet[1].id, dublikaattiKuukaudet);
   const printRef = useRef<HTMLDivElement>(null);
 
   const tulostaaPDF = () => {
@@ -214,7 +215,9 @@ export default function Tasaus({ vuosiData, appData }: Props) {
               </thead>
               <tbody>
                 {[...vertailuVuodet, vuosiData].map((v) => {
-                  const tv = laskeTasaus(v, tontti, osapuolet[0].id, osapuolet[1].id);
+                  const edVuosi = appData.vuodet.find((av) => av.vuosi === v.vuosi - 1) ?? null;
+                  const dubKuukaudet = tunnistaDublikaatit(v, edVuosi);
+                  const tv = laskeTasaus(v, tontti, osapuolet[0].id, osapuolet[1].id, dubKuukaudet);
                   const isCurrentYear = v.vuosi === vuosiData.vuosi;
                   const maks = tv.tasausErotus > 0.005
                     ? (tv.maksajaId === osapuolet[0].id ? osapuolet[0].nimi : osapuolet[1].nimi)

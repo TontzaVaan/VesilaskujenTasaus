@@ -1,10 +1,30 @@
 import type { VuosiData, Tontti, TasausLaskelma } from '../types';
 
+export function tunnistaDublikaatit(
+  vuosiData: VuosiData,
+  edellinenVuosi: VuosiData | null
+): Set<number> {
+  if (!edellinenVuosi) return new Set();
+  const edellisetErapaivat = new Set(
+    edellinenVuosi.vesilaskut
+      .filter((v) => v.erapaiva && v.erapaiva.trim() !== '')
+      .map((v) => v.erapaiva as string)
+  );
+  const dublikaatit = new Set<number>();
+  for (const v of vuosiData.vesilaskut) {
+    if (v.erapaiva && edellisetErapaivat.has(v.erapaiva)) {
+      dublikaatit.add(v.kuukausi);
+    }
+  }
+  return dublikaatit;
+}
+
 export function laskeTasaus(
   vuosiData: VuosiData,
   tontti: Tontti,
   op1Id: string,
-  op2Id: string
+  op2Id: string,
+  dublikaattiKuukaudet?: Set<number>
 ): TasausLaskelma {
   // --- Maksut ---
   const op1Maksut = vuosiData.maksut
@@ -14,12 +34,16 @@ export function laskeTasaus(
     .filter((m) => m.osapuoliId === op2Id)
     .reduce((s, m) => s + m.maara, 0);
 
-  // --- Vesilaskut ---
-  const yhteisPerusmaksu = vuosiData.vesilaskut.reduce(
+  // --- Vesilaskut (duplikaatit ohitetaan laskennassa) ---
+  const aktiivisetVesilaskut = dublikaattiKuukaudet
+    ? vuosiData.vesilaskut.filter((v) => !dublikaattiKuukaudet.has(v.kuukausi))
+    : vuosiData.vesilaskut;
+
+  const yhteisPerusmaksu = aktiivisetVesilaskut.reduce(
     (s, v) => s + v.perusmaksu,
     0
   );
-  const yhteisKayttomaksu = vuosiData.vesilaskut.reduce(
+  const yhteisKayttomaksu = aktiivisetVesilaskut.reduce(
     (s, v) => s + v.kayttomaksu,
     0
   );

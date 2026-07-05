@@ -12,6 +12,7 @@ import Tasaus from './components/Tasaus';
 import Historia from './components/Historia';
 import Asetukset from './components/Asetukset';
 import GitHubSync from './components/GitHubSync';
+import { tunnistaDublikaatit } from './utils/calculations';
 
 type Valilehti = 'maksut' | 'vesilaskut' | 'vesikulutus' | 'kiinteistovero' | 'muut' | 'tasaus';
 
@@ -67,6 +68,13 @@ export default function App() {
     : null;
 
   const lukittu = aktiivinen?.status === 'valmis';
+
+  const edellinenVuosi = aktiivinen
+    ? (vuodet.find((v) => v.vuosi === aktiivinen.vuosi - 1) ?? null)
+    : null;
+  const dublikaattiKuukaudet = aktiivinen
+    ? tunnistaDublikaatit(aktiivinen, edellinenVuosi)
+    : new Set<number>();
 
   const lisaaUusiVuosi = () => {
     const vuosi = parseInt(uusiVuosiInput, 10);
@@ -266,6 +274,7 @@ export default function App() {
                 <Vesilaskut
                   vesilaskut={aktiivinen.vesilaskut}
                   lukittu={lukittu}
+                  dublikaattiKuukaudet={dublikaattiKuukaudet}
                   onChange={(vesilaskut) => paivitaVuosi(aktiivinen.vuosi, { vesilaskut })}
                 />
               )}
@@ -298,7 +307,7 @@ export default function App() {
                 />
               )}
               {valilehti === 'tasaus' && (
-                <Tasaus vuosiData={aktiivinen} appData={data} />
+                <Tasaus vuosiData={aktiivinen} appData={data} dublikaattiKuukaudet={dublikaattiKuukaudet} />
               )}
             </div>
           </>
