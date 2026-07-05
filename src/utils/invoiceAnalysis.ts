@@ -127,6 +127,7 @@ export async function analysoi(file: File, apiKey: string): Promise<AnalyysiTulo
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
         'content-type': 'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify({
         model: ANALYYSI_MALLI,
