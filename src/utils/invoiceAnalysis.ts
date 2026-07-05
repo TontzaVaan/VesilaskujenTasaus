@@ -35,7 +35,7 @@ export type TunnistamatonTulos = {
 
 export type AnalyysiTulos = VesilaskuTulos | KiinteistoveroTulos | TunnistamatonTulos;
 
-const ANALYYSI_MALLI = 'claude-opus-4-8';
+const ANALYYSI_MALLI = 'claude-haiku-4-5-20251001';
 
 const SYSTEM_PROMPT = `You are analyzing a Finnish utility or property tax bill image. Return ONLY a valid JSON object — no markdown, no prose, no code fences.
 
