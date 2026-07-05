@@ -371,17 +371,33 @@ export default function App() {
               {valilehti === 'vesilaskut' && (
                 <Vesilaskut
                   vesilaskut={aktiivinen.vesilaskut}
+                  osapuolet={data.osapuolet}
                   lukittu={lukittu}
                   dublikaattiKuukaudet={dublikaattiKuukaudet}
                   onChange={(vesilaskut) => paivitaVuosi(aktiivinen.vuosi, { vesilaskut })}
+                  onSuoramaksu={(osapuoliId, paiva, maara, kommentti) => {
+                    const uusiMaksu = {
+                      id: crypto.randomUUID(),
+                      paiva,
+                      osapuoliId,
+                      maara,
+                      kommentti,
+                    };
+                    paivitaVuosi(aktiivinen.vuosi, {
+                      maksut: [...aktiivinen.maksut, uusiMaksu],
+                    });
+                  }}
                 />
               )}
               {valilehti === 'vesikulutus' && (
                 <Vesikulutus
+                  vuosi={aktiivinen.vuosi}
                   mittarit={aktiivinen.mittarit}
+                  vesimittarit={data.vesimittarit ?? []}
                   osapuolet={data.osapuolet}
                   lukittu={lukittu}
                   onChange={(mittarit) => paivitaVuosi(aktiivinen.vuosi, { mittarit })}
+                  onAsetuksetClick={() => setAsetuksetAuki(true)}
                 />
               )}
               {valilehti === 'kiinteistovero' && (

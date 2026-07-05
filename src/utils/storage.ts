@@ -1,4 +1,4 @@
-import type { AppData, VuosiData, Mittarit, VuosiStatus } from '../types';
+import type { AppData, VuosiData, Mittarit, VuosiStatus, VesimittariLukema } from '../types';
 
 const STORAGE_KEY = 'onnenkoukku-data';
 
@@ -233,7 +233,8 @@ export function defaultAppData(): AppData {
       { id: 'op1', nimi: 'Pakarinen' },
       { id: 'op2', nimi: 'Pusa' },
     ],
-    tontti: { op1Neliometrit: 55.22, op2Neliometrit: 44.78 },
+    tontti: { op1Neliometrit: 709, op2Neliometrit: 575 },
+    vesimittarit: [] as VesimittariLukema[],
     vuodet: [
       ...historiaData(),
       { ...tyhjaVuosiData(2025), status: 'kesken' as VuosiStatus },
@@ -242,16 +243,31 @@ export function defaultAppData(): AppData {
 }
 
 function migroi(data: AppData): AppData {
+  let muuttui = false;
+
+  // Fix old incorrect percentage values stored as m²
+  if (data.tontti.op1Neliometrit === 55.22 && data.tontti.op2Neliometrit === 44.78) {
+    data = { ...data, tontti: { ...data.tontti, op1Neliometrit: 709, op2Neliometrit: 575 } };
+    muuttui = true;
+  }
+
+  // Add vesimittarit field if missing
+  if (!data.vesimittarit) {
+    data = { ...data, vesimittarit: [] };
+    muuttui = true;
+  }
+
+  // Add missing historical years
   const historia = historiaData();
   const olemassaOlevat = new Set(data.vuodet.map((v) => v.vuosi));
   const puuttuvat = historia.filter((v) => !olemassaOlevat.has(v.vuosi));
-  if (puuttuvat.length === 0) return data;
-  const uusi = {
-    ...data,
-    vuodet: [...data.vuodet, ...puuttuvat].sort((a, b) => a.vuosi - b.vuosi),
-  };
-  tallennaData(uusi);
-  return uusi;
+  if (puuttuvat.length > 0) {
+    data = { ...data, vuodet: [...data.vuodet, ...puuttuvat].sort((a, b) => a.vuosi - b.vuosi) };
+    muuttui = true;
+  }
+
+  if (muuttui) tallennaData(data);
+  return data;
 }
 
 export function lataaData(): AppData {

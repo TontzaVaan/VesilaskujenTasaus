@@ -1,15 +1,51 @@
-import type { Vesilasku } from '../types';
+import { useState } from 'react';
+import type { Vesilasku, Osapuoli } from '../types';
 import { KUUKAUDET, formatEuro } from '../utils/calculations';
 import Liitteet from './Liitteet';
 
+interface SuoramaksuPending {
+  kuukausi: number;
+  maara: number;
+  osapuoliId: string;
+  paiva: string;
+}
+
 interface Props {
   vesilaskut: Vesilasku[];
+  osapuolet: [Osapuoli, Osapuoli];
   lukittu?: boolean;
   dublikaattiKuukaudet?: Set<number>;
   onChange: (vesilaskut: Vesilasku[]) => void;
+  onSuoramaksu?: (osapuoliId: string, paiva: string, maara: number, kommentti: string) => void;
 }
 
-export default function Vesilaskut({ vesilaskut, lukittu, dublikaattiKuukaudet, onChange }: Props) {
+export default function Vesilaskut({ vesilaskut, osapuolet, lukittu, dublikaattiKuukaudet, onChange, onSuoramaksu }: Props) {
+  const [suoramaksuAuki, setSuoramaksuAuki] = useState<number | null>(null);
+  const [suoramaksuData, setSuoramaksuData] = useState<Partial<SuoramaksuPending>>({});
+
+  const avaSuoramaksu = (v: Vesilasku) => {
+    const maara = Math.round((v.perusmaksu + v.kayttomaksu) * 100) / 100;
+    setSuoramaksuData({
+      kuukausi: v.kuukausi,
+      maara,
+      osapuoliId: osapuolet[0].id,
+      paiva: v.erapaiva || '',
+    });
+    setSuoramaksuAuki(v.kuukausi);
+  };
+
+  const vahvistaSuoramaksu = () => {
+    if (!suoramaksuData.osapuoliId || !suoramaksuData.paiva || !suoramaksuData.maara) return;
+    const kuukausiNimi = KUUKAUDET[(suoramaksuData.kuukausi ?? 1) - 1];
+    onSuoramaksu?.(
+      suoramaksuData.osapuoliId,
+      suoramaksuData.paiva,
+      suoramaksuData.maara,
+      `Vesilasku ${kuukausiNimi} (suoramaksu)`
+    );
+    setSuoramaksuAuki(null);
+  };
+
   const paivita = (
     kuukausi: number,
     kentta: keyof Vesilasku,
@@ -67,15 +103,15 @@ export default function Vesilaskut({ vesilaskut, lukittu, dublikaattiKuukaudet, 
               <th className="pb-2 pr-3 font-medium text-right">Käyttömaksu €</th>
               <th className="pb-2 pr-3 font-medium text-right">Yhteensä €</th>
               <th className="pb-2 pr-3 font-medium">Kommentti</th>
-              <th className="pb-2 font-medium">Liitteet</th>
+              <th className="pb-2 pr-3 font-medium">Liitteet</th>
+              {onSuoramaksu && <th className="pb-2 font-medium w-8"></th>}
             </tr>
           </thead>
-          <tbody>
-            {vesilaskut.map((v) => {
+          {vesilaskut.map((v) => {
               const onDublikaatti = dublikaattiKuukaudet?.has(v.kuukausi) ?? false;
               return (
+                <tbody key={v.kuukausi}>
                 <tr
-                  key={v.kuukausi}
                   className={`border-b border-gray-100 ${onDublikaatti ? 'bg-amber-50' : 'hover:bg-gray-50'}`}
                 >
                   <td className="py-1.5 pr-3 font-medium text-gray-700">
@@ -137,17 +173,76 @@ export default function Vesilaskut({ vesilaskut, lukittu, dublikaattiKuukaudet, 
                       placeholder="Kommentti"
                     />
                   </td>
-                  <td className="py-1.5">
+                  <td className="py-1.5 pr-3">
                     <Liitteet
                       liiteIds={v.liitteet ?? []}
                       onChange={(ids) => paivita(v.kuukausi, 'liitteet', ids)}
                       label="Lisää lasku"
                     />
                   </td>
+                  {onSuoramaksu && (
+                    <td className="py-1.5">
+                      {!lukittu && (
+                        <button
+                          onClick={() => suoramaksuAuki === v.kuukausi ? setSuoramaksuAuki(null) : avaSuoramaksu(v)}
+                          title="Merkitse maksetuksi suoraan osapuolen tililtä"
+                          className={`text-xs px-1.5 py-0.5 rounded border transition-colors ${suoramaksuAuki === v.kuukausi ? 'bg-green-100 border-green-300 text-green-700' : 'border-gray-200 text-gray-400 hover:text-green-600 hover:border-green-300'}`}
+                        >
+                          💳
+                        </button>
+                      )}
+                    </td>
+                  )}
                 </tr>
+                {suoramaksuAuki === v.kuukausi && (
+                  <tr className="bg-green-50 border-b border-green-200">
+                    <td colSpan={onSuoramaksu ? 8 : 7} className="px-3 py-2">
+                      <div className="flex items-center gap-3 text-sm flex-wrap">
+                        <span className="text-green-800 font-medium">Suoramaksu — {KUUKAUDET[v.kuukausi - 1]}:</span>
+                        <select
+                          value={suoramaksuData.osapuoliId}
+                          onChange={(e) => setSuoramaksuData({ ...suoramaksuData, osapuoliId: e.target.value })}
+                          className="border border-gray-200 rounded px-2 py-1 text-xs"
+                        >
+                          {osapuolet.map((op) => (
+                            <option key={op.id} value={op.id}>{op.nimi}</option>
+                          ))}
+                        </select>
+                        <span className="text-gray-500 text-xs">maksoi</span>
+                        <input
+                          type="number"
+                          value={suoramaksuData.maara ?? ''}
+                          onChange={(e) => setSuoramaksuData({ ...suoramaksuData, maara: parseFloat(e.target.value) || 0 })}
+                          step="0.01"
+                          className="border border-gray-200 rounded px-2 py-1 w-24 text-right text-xs"
+                        />
+                        <span className="text-gray-500 text-xs">€ päivänä</span>
+                        <input
+                          type="date"
+                          value={suoramaksuData.paiva ?? ''}
+                          onChange={(e) => setSuoramaksuData({ ...suoramaksuData, paiva: e.target.value })}
+                          className="border border-gray-200 rounded px-2 py-1 text-xs"
+                        />
+                        <button
+                          onClick={vahvistaSuoramaksu}
+                          disabled={!suoramaksuData.paiva || !suoramaksuData.maara}
+                          className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:opacity-50"
+                        >
+                          Lisää maksuihin
+                        </button>
+                        <button
+                          onClick={() => setSuoramaksuAuki(null)}
+                          className="text-xs text-gray-400 hover:text-gray-600"
+                        >
+                          Peruuta
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                </tbody>
               );
-            })}
-          </tbody>
+          })}
           <tfoot>
             <tr className="border-t-2 border-gray-300 font-semibold bg-gray-50">
               <td className="py-2 pr-3 text-gray-700">
@@ -157,8 +252,9 @@ export default function Vesilaskut({ vesilaskut, lukittu, dublikaattiKuukaudet, 
               <td className="py-2 pr-3 text-right">{formatEuro(totalPerusmaksu)}</td>
               <td className="py-2 pr-3 text-right">{formatEuro(totalKayttomaksu)}</td>
               <td className="py-2 pr-3 text-right">{formatEuro(totalYhteensa)}</td>
-              <td className="py-2"></td>
-              <td className="py-2"></td>
+              <td className="py-2 pr-3"></td>
+              <td className="py-2 pr-3"></td>
+              {onSuoramaksu && <td className="py-2"></td>}
             </tr>
           </tfoot>
         </table>

@@ -42,10 +42,11 @@ export function useAppData() {
   const paivitaAsetukset = useCallback(
     (
       osapuolet: AppData['osapuolet'],
-      tontti: AppData['tontti']
+      tontti: AppData['tontti'],
+      vesimittarit: AppData['vesimittarit']
     ) => {
       setData((prev) => {
-        const uusi = { ...prev, osapuolet, tontti };
+        const uusi = { ...prev, osapuolet, tontti, vesimittarit };
         tallennaData(uusi);
         return uusi;
       });

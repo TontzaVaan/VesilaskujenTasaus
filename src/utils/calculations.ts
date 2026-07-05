@@ -1,4 +1,24 @@
-import type { VuosiData, Tontti, TasausLaskelma } from '../types';
+import type { VuosiData, Tontti, TasausLaskelma, VesimittariLukema } from '../types';
+
+export function laskeVuosikulutus(
+  vuosi: number,
+  vesimittarit: VesimittariLukema[]
+): { pusaAlku: number; pusaLoppu: number; pakarinenAlku: number; pakarinenLoppu: number;
+     pusaKulutus: number; pakarinenKulutus: number } | null {
+  const loppu = vesimittarit.find((m) => m.vuosi === vuosi);
+  const alku  = vesimittarit.find((m) => m.vuosi === vuosi - 1);
+  if (!loppu || !alku) return null;
+  const pakarinenKulutus = loppu.pakarineLukema - alku.pakarineLukema;
+  const pusaKulutus = Math.max(0, (loppu.pusaLukema - alku.pusaLukema) - pakarinenKulutus);
+  return {
+    pusaAlku: alku.pusaLukema,
+    pusaLoppu: loppu.pusaLukema,
+    pakarinenAlku: alku.pakarineLukema,
+    pakarinenLoppu: loppu.pakarineLukema,
+    pusaKulutus: Math.max(0, pusaKulutus),
+    pakarinenKulutus: Math.max(0, pakarinenKulutus),
+  };
+}
 
 export function tunnistaDublikaatit(
   vuosiData: VuosiData,
@@ -24,7 +44,8 @@ export function laskeTasaus(
   tontti: Tontti,
   op1Id: string,
   op2Id: string,
-  dublikaattiKuukaudet?: Set<number>
+  dublikaattiKuukaudet?: Set<number>,
+  vesimittarit?: VesimittariLukema[]
 ): TasausLaskelma {
   // --- Maksut ---
   const op1Maksut = vuosiData.maksut
@@ -48,14 +69,17 @@ export function laskeTasaus(
     0
   );
 
-  // Vesikulutukset
-  const yhteismaara =
-    vuosiData.mittarit.yhteinen.loppuLukema -
-    vuosiData.mittarit.yhteinen.alkuLukema;
-  const op1Kulutus =
-    vuosiData.mittarit.alamittari.loppuLukema -
-    vuosiData.mittarit.alamittari.alkuLukema;
-  const op2Kulutus = Math.max(0, yhteismaara - op1Kulutus);
+  // Vesikulutukset — use global meter readings if available, else fall back to per-year mittarit
+  const globalKulutus = vesimittarit ? laskeVuosikulutus(vuosiData.vuosi, vesimittarit) : null;
+  const yhteismaara = globalKulutus
+    ? globalKulutus.pusaKulutus + globalKulutus.pakarinenKulutus
+    : vuosiData.mittarit.yhteinen.loppuLukema - vuosiData.mittarit.yhteinen.alkuLukema;
+  const op1Kulutus = globalKulutus
+    ? globalKulutus.pakarinenKulutus
+    : vuosiData.mittarit.alamittari.loppuLukema - vuosiData.mittarit.alamittari.alkuLukema;
+  const op2Kulutus = globalKulutus
+    ? globalKulutus.pusaKulutus
+    : Math.max(0, yhteismaara - op1Kulutus);
 
   const totalKulutus = op1Kulutus + op2Kulutus;
   const op1KulutusPct = totalKulutus > 0 ? op1Kulutus / totalKulutus : 0.5;

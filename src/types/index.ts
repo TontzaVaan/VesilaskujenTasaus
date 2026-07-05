@@ -74,10 +74,17 @@ export interface Tontti {
   op1KiinteistoveroProsentti?: number; // 0–100; if set, overrides m² calculation
 }
 
+export interface VesimittariLukema {
+  vuosi: number;          // year-end reading (e.g. 2024 = end of December 2024)
+  pusaLukema: number;     // päämittari m³ (reads all water)
+  pakarineLukema: number; // alamittari m³ (reads only Pakarinen's water)
+}
+
 export interface AppData {
   osapuolet: [Osapuoli, Osapuoli];
   tontti: Tontti;
   vuodet: VuosiData[];
+  vesimittarit: VesimittariLukema[];
 }
 
 export interface TasausLaskelma {

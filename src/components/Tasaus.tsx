@@ -12,7 +12,8 @@ interface Props {
 
 export default function Tasaus({ vuosiData, appData, dublikaattiKuukaudet }: Props) {
   const { osapuolet, tontti } = appData;
-  const t = laskeTasaus(vuosiData, tontti, osapuolet[0].id, osapuolet[1].id, dublikaattiKuukaudet);
+  const vesimittarit = appData.vesimittarit ?? [];
+  const t = laskeTasaus(vuosiData, tontti, osapuolet[0].id, osapuolet[1].id, dublikaattiKuukaudet, vesimittarit);
   const printRef = useRef<HTMLDivElement>(null);
 
   const tulostaaPDF = () => {
@@ -339,7 +340,7 @@ export default function Tasaus({ vuosiData, appData, dublikaattiKuukaudet }: Pro
                 {[...vertailuVuodet, vuosiData].map((v) => {
                   const edVuosi = appData.vuodet.find((av) => av.vuosi === v.vuosi - 1) ?? null;
                   const dubKuukaudet = tunnistaDublikaatit(v, edVuosi);
-                  const tv = laskeTasaus(v, tontti, osapuolet[0].id, osapuolet[1].id, dubKuukaudet);
+                  const tv = laskeTasaus(v, tontti, osapuolet[0].id, osapuolet[1].id, dubKuukaudet, appData.vesimittarit ?? []);
                   const isCurrentYear = v.vuosi === vuosiData.vuosi;
                   const maks = tv.tasausErotus > 0.005
                     ? (tv.maksajaId === osapuolet[0].id ? osapuolet[0].nimi : osapuolet[1].nimi)
