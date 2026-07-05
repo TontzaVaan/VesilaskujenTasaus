@@ -1,0 +1,276 @@
+import type { AppData, VuosiData, Mittarit, VuosiStatus } from '../types';
+
+const STORAGE_KEY = 'onnenkoukku-data';
+
+function tyhjaMittarit(): Mittarit {
+  return {
+    yhteinen: { alkuPvm: '', alkuLukema: 0, loppuPvm: '', loppuLukema: 0 },
+    alamittari: { alkuPvm: '', alkuLukema: 0, loppuPvm: '', loppuLukema: 0 },
+  };
+}
+
+export function tyhjaVuosiData(vuosi: number): VuosiData {
+  return {
+    vuosi,
+    maksut: [],
+    vesilaskut: Array.from({ length: 12 }, (_, i) => ({
+      kuukausi: i + 1,
+      erapaiva: '',
+      perusmaksu: 0,
+      kayttomaksu: 0,
+      kommentti: '',
+    })),
+    mittarit: tyhjaMittarit(),
+    kiinteistoveroTontti: { maapohjaVero: 0 },
+    rakennusverot: [],
+    muutKulut: [],
+  };
+}
+
+function historiaData(): VuosiData[] {
+  return [
+    {
+      vuosi: 2020,
+      status: 'valmis',
+      maksut: [
+        { id: 'm2020-op1-1', paiva: '2020-07-06', osapuoliId: 'op1', maara: 862.50, kommentti: 'Vesi 2020' },
+        { id: 'm2020-op1-2', paiva: '2020-09-07', osapuoliId: 'op1', maara: 931.95, kommentti: 'Kiinteistövero 2020' },
+        { id: 'm2020-op2-1', paiva: '2020-07-06', osapuoliId: 'op2', maara: 667.02, kommentti: 'Vesi 2020' },
+        { id: 'm2020-op2-2', paiva: '2020-07-06', osapuoliId: 'op2', maara: 931.95, kommentti: 'Kiinteistövero 2020' },
+      ],
+      vesilaskut: [
+        { kuukausi: 1, erapaiva: '2019-12-17', perusmaksu: 74.9952, kayttomaksu: 255.37, kommentti: 'Loka-Joulu 2019' },
+        { kuukausi: 2, erapaiva: '2020-03-16', perusmaksu: 37.4976, kayttomaksu: 183.768, kommentti: 'Tammi-Helmi' },
+        { kuukausi: 3, erapaiva: '2020-05-18', perusmaksu: 18.7488, kayttomaksu: 93.496 },
+        { kuukausi: 4, erapaiva: '2020-06-05', perusmaksu: 18.7488, kayttomaksu: 90.272 },
+        { kuukausi: 5, erapaiva: '2020-07-02', perusmaksu: 18.7488, kayttomaksu: 93.496 },
+        { kuukausi: 6, erapaiva: '2020-08-03', perusmaksu: 18.7488, kayttomaksu: 90.272 },
+        { kuukausi: 7, erapaiva: '2020-09-02', perusmaksu: 18.7488, kayttomaksu: 93.496 },
+        { kuukausi: 8, erapaiva: '2020-10-06', perusmaksu: 18.7488, kayttomaksu: 93.496 },
+        { kuukausi: 9, perusmaksu: 0, kayttomaksu: 0 },
+        { kuukausi: 10, erapaiva: '2020-10-28', perusmaksu: 17.484, kayttomaksu: 293.384, kommentti: 'Tasaus 1.3–28.9' },
+        { kuukausi: 11, perusmaksu: 0, kayttomaksu: 0 },
+        { kuukausi: 12, perusmaksu: 0, kayttomaksu: 0 },
+      ],
+      mittarit: {
+        yhteinen:  { alkuPvm: '2019-10-12', alkuLukema: 2473, loppuPvm: '2020-09-21', loppuLukema: 2785 },
+        alamittari: { alkuPvm: '2019-10-12', alkuLukema: 1497, loppuPvm: '2020-09-21', loppuLukema: 1665 },
+      },
+      kiinteistoveroTontti: { maapohjaVero: 0 },
+      rakennusverot: [
+        { id: 'rv2020-mp1', nimi: 'Maapohja (Pakarinen)', omistajaId: 'op1', maara: 604.99 },
+        { id: 'rv2020-mp2', nimi: 'Maapohja (Pusa)',      omistajaId: 'op2', maara: 490.64 },
+        { id: 'rv2020-pt1', nimi: 'Pientalo (Pakarinen)', omistajaId: 'op1', maara: 440.90 },
+        { id: 'rv2020-pt2', nimi: 'Pientalo (Pusa)',      omistajaId: 'op2', maara: 306.18 },
+      ],
+      muutKulut: [
+        { id: 'mk2020-1', kuvaus: 'Tasausoikaisu', paiva: '2020-12-31', yhteensa: 11.35, op1Prosentti: 100 },
+        { id: 'mk2020-2', kuvaus: 'Tasausoikaisu', paiva: '2020-12-31', yhteensa:  8.65, op1Prosentti:   0 },
+      ],
+    },
+    {
+      vuosi: 2021,
+      status: 'valmis',
+      maksut: [
+        { id: 'm2021-op1-1', paiva: '2021-06-01', osapuoliId: 'op1', maara: 642.43,  kommentti: 'Vesi 2021' },
+        { id: 'm2021-op1-2', paiva: '2020-09-07', osapuoliId: 'op1', maara: 967.14,  kommentti: 'Kiinteistövero 2021' },
+        { id: 'm2021-op2-1', paiva: '2021-06-01', osapuoliId: 'op2', maara: 1028.25, kommentti: 'Vesi 2021' },
+        { id: 'm2021-op2-2', paiva: '2020-07-06', osapuoliId: 'op2', maara: 967.15,  kommentti: 'Kiinteistövero 2021' },
+      ],
+      vesilaskut: [
+        { kuukausi:  1, erapaiva: '2021-02-03', perusmaksu: 18.75, kayttomaksu:  93.50 },
+        { kuukausi:  2, erapaiva: '2021-03-05', perusmaksu: 19.20, kayttomaksu: 112.60 },
+        { kuukausi:  3, erapaiva: '2021-03-31', perusmaksu: 19.20, kayttomaksu: 102.63 },
+        { kuukausi:  4, erapaiva: '2021-05-11', perusmaksu: 19.20, kayttomaksu: 112.60 },
+        { kuukausi:  5, erapaiva: '2021-06-02', perusmaksu: 19.20, kayttomaksu: 109.30 },
+        { kuukausi:  6, erapaiva: '2021-07-05', perusmaksu: 19.20, kayttomaksu: 112.60 },
+        { kuukausi:  7, erapaiva: '2021-08-04', perusmaksu: 19.20, kayttomaksu: 109.30 },
+        { kuukausi:  8, erapaiva: '2021-09-02', perusmaksu: 19.20, kayttomaksu: 112.60 },
+        { kuukausi:  9, erapaiva: '2021-10-05', perusmaksu: 19.20, kayttomaksu: 112.60 },
+        { kuukausi: 10, erapaiva: '2021-11-04', perusmaksu: 19.20, kayttomaksu: 109.30 },
+        { kuukausi: 11, erapaiva: '2021-12-03', perusmaksu: 19.20, kayttomaksu: 112.60 },
+        { kuukausi: 12, erapaiva: '2022-02-04', perusmaksu: 38.40, kayttomaksu: 221.90, kommentti: 'Joulu + tasausmaksu' },
+      ],
+      mittarit: {
+        yhteinen:  { alkuPvm: '2021-01-01', alkuLukema:    0, loppuPvm: '2021-12-12', loppuLukema:  399 },
+        alamittari: { alkuPvm: '2020-09-21', alkuLukema: 1665, loppuPvm: '2021-12-12', loppuLukema: 1906 },
+      },
+      kiinteistoveroTontti: { maapohjaVero: 0 },
+      rakennusverot: [
+        { id: 'rv2021-mp1', nimi: 'Maapohja (Pakarinen)', omistajaId: 'op1', maara: 667.60 },
+        { id: 'rv2021-mp2', nimi: 'Maapohja (Pusa)',      omistajaId: 'op2', maara: 541.42 },
+        { id: 'rv2021-pt1', nimi: 'Pientalo (Pakarinen)', omistajaId: 'op1', maara: 426.85 },
+        { id: 'rv2021-pt2', nimi: 'Pientalo (Pusa)',      omistajaId: 'op2', maara: 298.42 },
+      ],
+      muutKulut: [],
+    },
+    {
+      vuosi: 2022,
+      status: 'valmis',
+      maksut: [
+        { id: 'm2022-op1-1', paiva: '2022-06-03', osapuoliId: 'op1', maara:  500 },
+        { id: 'm2022-op1-2', paiva: '2022-09-19', osapuoliId: 'op1', maara:  500 },
+        { id: 'm2022-op1-3', paiva: '2022-09-13', osapuoliId: 'op1', maara: 1000 },
+        { id: 'm2022-op2-1', paiva: '2022-03-28', osapuoliId: 'op2', maara:  250 },
+        { id: 'm2022-op2-2', paiva: '2022-09-16', osapuoliId: 'op2', maara:  800 },
+        { id: 'm2022-op2-3', paiva: '2022-05-25', osapuoliId: 'op2', maara:  250 },
+        { id: 'm2022-op2-4', paiva: '2022-05-02', osapuoliId: 'op2', maara:  500 },
+      ],
+      vesilaskut: [
+        { kuukausi:  1, perusmaksu: 0,       kayttomaksu: 0,        kommentti: 'Hyvitetty 2021 tasauksessa' },
+        { kuukausi:  2, perusmaksu: 0,       kayttomaksu: 0,        kommentti: 'Hyvitetty 2021 tasauksessa' },
+        { kuukausi:  3, erapaiva: '2022-04-04', perusmaksu: 35.8732, kayttomaksu: 186.1092 },
+        { kuukausi:  4, erapaiva: '2022-05-05', perusmaksu: 19.8648, kayttomaksu: 116.362  },
+        { kuukausi:  5, erapaiva: '2022-06-02', perusmaksu: 19.8648, kayttomaksu: 112.9392 },
+        { kuukausi:  6, erapaiva: '2022-07-05', perusmaksu: 19.8648, kayttomaksu: 116.362  },
+        { kuukausi:  7, erapaiva: '2022-08-04', perusmaksu: 19.8648, kayttomaksu: 112.9392 },
+        { kuukausi:  8, erapaiva: '2022-09-02', perusmaksu: 19.8648, kayttomaksu: 116.362  },
+        { kuukausi:  9, erapaiva: '2022-10-05', perusmaksu: 19.8648, kayttomaksu: 116.362  },
+        { kuukausi: 10, erapaiva: '2022-11-03', perusmaksu: 19.8648, kayttomaksu: 112.9392 },
+        { kuukausi: 11, erapaiva: '2022-12-05', perusmaksu: 19.8648, kayttomaksu: 116.362  },
+        { kuukausi: 12, erapaiva: '2023-01-05', perusmaksu: 19.8648, kayttomaksu: 112.9392 },
+      ],
+      mittarit: {
+        yhteinen:  { alkuPvm: '2021-12-12', alkuLukema:  399, loppuPvm: '2022-01-05', loppuLukema:  763 },
+        alamittari: { alkuPvm: '2021-12-12', alkuLukema: 1906, loppuPvm: '2022-01-05', loppuLukema: 2087 },
+      },
+      kiinteistoveroTontti: { maapohjaVero: 0 },
+      rakennusverot: [
+        { id: 'rv2022-mp1', nimi: 'Maapohja (Pakarinen)', omistajaId: 'op1', maara: 672.06 },
+        { id: 'rv2022-mp2', nimi: 'Maapohja (Pusa)',      omistajaId: 'op2', maara: 545.04 },
+        { id: 'rv2022-pt1', nimi: 'Pientalo (Pakarinen)', omistajaId: 'op1', maara: 469.12 },
+        { id: 'rv2022-pt2', nimi: 'Pientalo (Pusa)',      omistajaId: 'op2', maara: 330.33 },
+      ],
+      muutKulut: [],
+    },
+    {
+      vuosi: 2023,
+      status: 'valmis',
+      maksut: [
+        { id: 'm2023-op1-1', paiva: '2023-08-31', osapuoliId: 'op1', maara: 500 },
+        { id: 'm2023-op1-2', paiva: '2023-08-10', osapuoliId: 'op1', maara: 500 },
+        { id: 'm2023-op1-3', paiva: '2023-05-03', osapuoliId: 'op1', maara: 500 },
+        { id: 'm2023-op1-4', paiva: '2023-05-22', osapuoliId: 'op1', maara: 500 },
+        { id: 'm2023-op2-1', paiva: '2023-08-31', osapuoliId: 'op2', maara: 500 },
+        { id: 'm2023-op2-2', paiva: '2023-08-04', osapuoliId: 'op2', maara: 500 },
+        { id: 'm2023-op2-3', paiva: '2023-07-03', osapuoliId: 'op2', maara: 500 },
+        { id: 'm2023-op2-4', paiva: '2023-03-28', osapuoliId: 'op2', maara: 250 },
+      ],
+      vesilaskut: [
+        { kuukausi:  1, erapaiva: '2023-04-04', perusmaksu: 40.3809, kayttomaksu: 148.8991, kommentti: 'Tammi+Helmi+hyvitys' },
+        { kuukausi:  2, erapaiva: '2023-04-20', perusmaksu: 21.762,  kayttomaksu: 113.088  },
+        { kuukausi:  3, erapaiva: '2023-05-08', perusmaksu: 21.762,  kayttomaksu: 113.088  },
+        { kuukausi:  4, erapaiva: '2023-06-02', perusmaksu: 21.762,  kayttomaksu: 109.318  },
+        { kuukausi:  5, erapaiva: '2023-07-05', perusmaksu: 21.762,  kayttomaksu: 113.088  },
+        { kuukausi:  6, erapaiva: '2023-08-03', perusmaksu: 21.762,  kayttomaksu: 109.318  },
+        { kuukausi:  7, erapaiva: '2023-09-04', perusmaksu: 21.762,  kayttomaksu: 113.088  },
+        { kuukausi:  8, erapaiva: '2023-10-05', perusmaksu: 21.762,  kayttomaksu: 113.088  },
+        { kuukausi:  9, erapaiva: '2023-11-02', perusmaksu: 21.762,  kayttomaksu: 113.088  },
+        { kuukausi: 10, erapaiva: '2023-12-05', perusmaksu: 21.762,  kayttomaksu: 109.318  },
+        { kuukausi: 11, erapaiva: '2024-01-05', perusmaksu: 21.762,  kayttomaksu: 113.088  },
+        { kuukausi: 12, erapaiva: '2024-02-01', perusmaksu: 21.762,  kayttomaksu: 109.318  },
+      ],
+      mittarit: {
+        yhteinen:  { alkuPvm: '2023-01-05', alkuLukema:  763, loppuPvm: '2023-12-31', loppuLukema: 1056 },
+        alamittari: { alkuPvm: '2023-01-05', alkuLukema: 2087, loppuPvm: '2023-12-31', loppuLukema: 2275 },
+      },
+      kiinteistoveroTontti: { maapohjaVero: 0 },
+      rakennusverot: [
+        { id: 'rv2023-mp1', nimi: 'Maapohja (Pakarinen)', omistajaId: 'op1', maara: 672.06 },
+        { id: 'rv2023-mp2', nimi: 'Maapohja (Pusa)',      omistajaId: 'op2', maara: 545.04 },
+        { id: 'rv2023-pt1', nimi: 'Pientalo (Pakarinen)', omistajaId: 'op1', maara: 469.12 },
+        { id: 'rv2023-pt2', nimi: 'Pientalo (Pusa)',      omistajaId: 'op2', maara: 330.33 },
+      ],
+      muutKulut: [],
+    },
+    {
+      vuosi: 2024,
+      status: 'valmis',
+      maksut: [
+        { id: 'm2024-op1-1', paiva: '2024-02-01', osapuoliId: 'op1', maara:  100,    kommentti: 'Tammi-Maaliskuu' },
+        { id: 'm2024-op1-2', paiva: '2024-05-01', osapuoliId: 'op1', maara:  250,    kommentti: 'Huhti-Kesäkuu' },
+        { id: 'm2024-op1-3', paiva: '2024-07-01', osapuoliId: 'op1', maara:  800,    kommentti: 'Heinäkuu' },
+        { id: 'm2024-op1-4', paiva: '2024-08-01', osapuoliId: 'op1', maara:  700,    kommentti: 'Elokuu' },
+        { id: 'm2024-op1-5', paiva: '2024-09-01', osapuoliId: 'op1', maara:  250,    kommentti: 'Syyskuu' },
+        { id: 'm2024-op1-6', paiva: '2024-11-01', osapuoliId: 'op1', maara:  300,    kommentti: 'Marraskuu' },
+        { id: 'm2024-op2-1', paiva: '2024-02-01', osapuoliId: 'op2', maara:  439.13, kommentti: 'Tammi-Maaliskuu' },
+        { id: 'm2024-op2-2', paiva: '2024-07-01', osapuoliId: 'op2', maara:  400,    kommentti: 'Heinäkuu' },
+        { id: 'm2024-op2-3', paiva: '2024-08-01', osapuoliId: 'op2', maara:  700,    kommentti: 'Elokuu' },
+      ],
+      vesilaskut: [
+        { kuukausi:  1, erapaiva: '2024-04-04', perusmaksu:  48.3228, kayttomaksu: 120.0572, kommentti: 'Sis. 75,17€ hyvitys' },
+        { kuukausi:  2, erapaiva: '2024-02-01', perusmaksu:  24.55,   kayttomaksu:  57.71   },
+        { kuukausi:  3, erapaiva: '2024-05-03', perusmaksu:  49.104,  kayttomaksu: 165.616,  kommentti: '2 laskua (30.4 ja 3.5)' },
+        { kuukausi:  4, erapaiva: '2023-06-05', perusmaksu:  49.104,  kayttomaksu: 245.506,  kommentti: '2 laskua (4.4 ja 5.6)' },
+        { kuukausi:  5, erapaiva: '2024-07-04', perusmaksu:  24.552,  kayttomaksu: 101.678   },
+        { kuukausi:  6, erapaiva: '2024-08-02', perusmaksu:  24.552,  kayttomaksu: 101.678   },
+        { kuukausi:  7, erapaiva: '2024-09-04', perusmaksu:  24.552,  kayttomaksu: 101.678   },
+        { kuukausi:  8, erapaiva: '2024-10-03', perusmaksu:  24.552,  kayttomaksu: 101.678   },
+        { kuukausi:  9, erapaiva: '2024-11-04', perusmaksu:  24.75,   kayttomaksu: 103.01    },
+        { kuukausi: 10, erapaiva: '2024-12-05', perusmaksu:  24.75,   kayttomaksu: 103.01    },
+        { kuukausi: 11, erapaiva: '2025-01-03', perusmaksu:  24.75,   kayttomaksu: 103.01    },
+        { kuukausi: 12, perusmaksu: 0, kayttomaksu: 0, kommentti: 'Ei laskua, hyvitys tammikuussa' },
+      ],
+      mittarit: {
+        yhteinen:  { alkuPvm: '2024-01-02', alkuLukema: 1056, loppuPvm: '2024-12-20', loppuLukema: 1315 },
+        alamittari: { alkuPvm: '2024-01-02', alkuLukema: 2275, loppuPvm: '2024-12-20', loppuLukema: 2443 },
+      },
+      kiinteistoveroTontti: { maapohjaVero: 0 },
+      rakennusverot: [
+        { id: 'rv2024-mp1', nimi: 'Maapohja (Pakarinen)', omistajaId: 'op1', maara: 901.68 },
+        { id: 'rv2024-mp2', nimi: 'Maapohja (Pusa)',      omistajaId: 'op2', maara: 731.25 },
+        { id: 'rv2024-pt1', nimi: 'Pientalo (Pakarinen)', omistajaId: 'op1', maara: 470.05 },
+        { id: 'rv2024-pt2', nimi: 'Pientalo (Pusa)',      omistajaId: 'op2', maara: 332.23 },
+      ],
+      muutKulut: [],
+    },
+  ];
+}
+
+export function defaultAppData(): AppData {
+  return {
+    osapuolet: [
+      { id: 'op1', nimi: 'Pakarinen' },
+      { id: 'op2', nimi: 'Pusa' },
+    ],
+    tontti: { op1Neliometrit: 55.22, op2Neliometrit: 44.78 },
+    vuodet: [
+      ...historiaData(),
+      { ...tyhjaVuosiData(2025), status: 'kesken' as VuosiStatus },
+    ],
+  };
+}
+
+function migroi(data: AppData): AppData {
+  const historia = historiaData();
+  const olemassaOlevat = new Set(data.vuodet.map((v) => v.vuosi));
+  const puuttuvat = historia.filter((v) => !olemassaOlevat.has(v.vuosi));
+  if (puuttuvat.length === 0) return data;
+  const uusi = {
+    ...data,
+    vuodet: [...data.vuodet, ...puuttuvat].sort((a, b) => a.vuosi - b.vuosi),
+  };
+  tallennaData(uusi);
+  return uusi;
+}
+
+export function lataaData(): AppData {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultAppData();
+    const data = JSON.parse(raw) as AppData;
+    // Varmista että kaikilla vuosilla on kaikki kentät
+    data.vuodet = data.vuodet.map((v) => ({
+      ...tyhjaVuosiData(v.vuosi),
+      ...v,
+      mittarit: { ...tyhjaMittarit(), ...v.mittarit },
+    }));
+    return migroi(data);
+  } catch {
+    return defaultAppData();
+  }
+}
+
+export function tallennaData(data: AppData): void {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
