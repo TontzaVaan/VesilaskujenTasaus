@@ -3,8 +3,16 @@ import heic2any from 'heic2any';
 import { tallennaTiedosto } from '../utils/fileStorage';
 import type { VuosiData, Vesilasku, Osapuoli } from '../types';
 import { analysoi, lataaAnthropicKey } from '../utils/invoiceAnalysis';
-import type { AnalyysiTulos, VesilaskuTulos, KiinteistoveroTulos } from '../utils/invoiceAnalysis';
+import type { AnalyysiTulos, VesilaskuTulos, KiinteistoveroTulos, MaksuTulos } from '../utils/invoiceAnalysis';
 import { KUUKAUDET } from '../utils/calculations';
+
+export interface MaksuPaivitys {
+  vuosi: number;
+  osapuoliId: string;
+  paiva: string;
+  maara: number;
+  kommentti?: string;
+}
 
 interface Props {
   vuosi: number;
@@ -13,7 +21,8 @@ interface Props {
   onConfirm: (
     vesilaskuPaivitykset: Partial<Vesilasku>[],
     kiinteistoTulos: KiinteistoveroTulos | null,
-    liiteIdt: Record<string, string>
+    liiteIdt: Record<string, string>,
+    maksuPaivitykset: MaksuPaivitys[]
   ) => void;
   onClose: () => void;
 }
@@ -162,7 +171,7 @@ export default function BulkImport({ vuosi, vuosiData, osapuolet, onConfirm, onC
     setVaihe('tarkistus');
   };
 
-  const paivitaMuokattuTulos = (idx: number, paivitys: Partial<VesilaskuTulos> | Partial<KiinteistoveroTulos>) => {
+  const paivitaMuokattuTulos = (idx: number, paivitys: Partial<VesilaskuTulos> | Partial<KiinteistoveroTulos> | Partial<MaksuTulos>) => {
     setTiedostot((prev) =>
       prev.map((t, i) =>
         i === idx
@@ -190,6 +199,7 @@ export default function BulkImport({ vuosi, vuosiData, osapuolet, onConfirm, onC
     const liiteIdt: Record<string, string> = {};
     const vesilaskuPaivitykset: Partial<Vesilasku>[] = [];
     let kiinteistoTulos: KiinteistoveroTulos | null = null;
+    const maksuPaivitykset: MaksuPaivitys[] = [];
 
     for (const t of tiedostot) {
       if (t.ohita || !t.muokattuTulos) continue;
@@ -207,10 +217,22 @@ export default function BulkImport({ vuosi, vuosiData, osapuolet, onConfirm, onC
       } else if (t.muokattuTulos.tyyppi === 'kiinteistovero') {
         liiteIdt['kiinteistovero'] = id;
         kiinteistoTulos = t.muokattuTulos as KiinteistoveroTulos;
+      } else if (t.muokattuTulos.tyyppi === 'maksu') {
+        const mt = t.muokattuTulos as MaksuTulos & { kohdeVuosi?: number };
+        const osapuoliId = mt.osapuoli === 'op1' ? osapuolet[0].id : mt.osapuoli === 'op2' ? osapuolet[1].id : null;
+        if (osapuoliId && mt.paiva && mt.maara > 0) {
+          maksuPaivitykset.push({
+            vuosi: mt.kohdeVuosi ?? (mt.paiva ? parseInt(mt.paiva.slice(0, 4)) : vuosi),
+            osapuoliId,
+            paiva: mt.paiva,
+            maara: mt.maara,
+            kommentti: mt.kommentti,
+          });
+        }
       }
     }
 
-    onConfirm(vesilaskuPaivitykset, kiinteistoTulos, liiteIdt);
+    onConfirm(vesilaskuPaivitykset, kiinteistoTulos, liiteIdt, maksuPaivitykset);
     setTallentaa(false);
   };
 
@@ -297,6 +319,9 @@ export default function BulkImport({ vuosi, vuosiData, osapuolet, onConfirm, onC
                   {t.status === 'valmis' && t.tulos?.tyyppi === 'kiinteistovero' && (
                     <span className="text-xs text-green-600">✓ Kiinteistövero</span>
                   )}
+                  {t.status === 'valmis' && t.tulos?.tyyppi === 'maksu' && (
+                    <span className="text-xs text-green-600">✓ Maksu</span>
+                  )}
                 </div>
               ))}
             </div>
@@ -321,6 +346,7 @@ export default function BulkImport({ vuosi, vuosiData, osapuolet, onConfirm, onC
                       <p className="text-xs text-gray-400 mt-0.5">
                         {t.muokattuTulos?.tyyppi === 'vesilasku' && 'Vesilasku'}
                         {t.muokattuTulos?.tyyppi === 'kiinteistovero' && 'Kiinteistövero'}
+                        {t.muokattuTulos?.tyyppi === 'maksu' && 'Maksu'}
                         {t.muokattuTulos?.tyyppi === 'tunnistamaton' && '⚠ Ei tunnistettu'}
                       </p>
                     </div>
@@ -352,6 +378,15 @@ export default function BulkImport({ vuosi, vuosiData, osapuolet, onConfirm, onC
                       osapuolet={osapuolet}
                       onChange={(p) => paivitaMuokattuTulos(i, p)}
                       onRakennusChange={(ri, k, v) => paivitaRakennus(i, ri, k, v)}
+                    />
+                  )}
+
+                  {!t.ohita && t.muokattuTulos?.tyyppi === 'maksu' && (
+                    <MaksuKortti
+                      tulos={t.muokattuTulos as MaksuTulos & { kohdeVuosi?: number }}
+                      vuosi={vuosi}
+                      osapuolet={osapuolet}
+                      onChange={(p) => paivitaMuokattuTulos(i, p)}
                     />
                   )}
 
@@ -467,6 +502,87 @@ function VesilaskuKortti({
           onChange={(e) => onChange({ kommentti: e.target.value })}
           className="border border-gray-200 rounded px-2 py-1 text-sm w-full"
           placeholder="Valinnainen kommentti"
+        />
+      </div>
+    </div>
+  );
+}
+
+function MaksuKortti({
+  tulos,
+  vuosi,
+  osapuolet,
+  onChange,
+}: {
+  tulos: MaksuTulos & { kohdeVuosi?: number };
+  vuosi: number;
+  osapuolet: [Osapuoli, Osapuoli];
+  onChange: (p: Partial<MaksuTulos & { kohdeVuosi?: number }>) => void;
+}) {
+  const paivaVuosi = tulos.paiva ? parseInt(tulos.paiva.slice(0, 4)) : vuosi;
+  const vuosivaihtoehdot = Array.from(new Set([paivaVuosi - 1, paivaVuosi, vuosi].filter(v => v > 2000)));
+  const kohdeVuosi = tulos.kohdeVuosi ?? paivaVuosi;
+
+  return (
+    <div className="space-y-2">
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-xs text-gray-500 block mb-0.5">Päivämäärä</label>
+          <input
+            type="date"
+            value={tulos.paiva}
+            onChange={(e) => onChange({ paiva: e.target.value })}
+            className="border border-gray-200 rounded px-2 py-1 text-sm w-full"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-gray-500 block mb-0.5">Summa €</label>
+          <input
+            type="number"
+            value={tulos.maara || ''}
+            onChange={(e) => onChange({ maara: parseFloat(e.target.value) || 0 })}
+            step="0.01"
+            className="border border-gray-200 rounded px-2 py-1 text-sm w-full text-right"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-gray-500 block mb-0.5">
+            Maksaja {tulos.osapuoli === null && <span className="text-amber-600">⚠ valitse</span>}
+          </label>
+          <select
+            value={tulos.osapuoli ?? ''}
+            onChange={(e) => {
+              const v = e.target.value;
+              onChange({ osapuoli: v === 'op1' ? 'op1' : v === 'op2' ? 'op2' : null });
+            }}
+            className={`border rounded px-2 py-1 text-sm w-full ${tulos.osapuoli === null ? 'border-amber-400 bg-amber-50' : 'border-gray-200'}`}
+          >
+            <option value="">— valitse —</option>
+            <option value="op1">{osapuolet[0].nimi}</option>
+            <option value="op2">{osapuolet[1].nimi}</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-xs text-gray-500 block mb-0.5">Kirjataan vuodelle</label>
+          <select
+            value={kohdeVuosi}
+            onChange={(e) => onChange({ kohdeVuosi: parseInt(e.target.value) })}
+            className="border border-gray-200 rounded px-2 py-1 text-sm w-full"
+          >
+            {vuosivaihtoehdot.map((v) => (
+              <option key={v} value={v}>{v}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div>
+        <label className="text-xs text-gray-500 block mb-0.5">Viite / kommentti</label>
+        <input
+          type="text"
+          value={tulos.kommentti ?? ''}
+          onChange={(e) => onChange({ kommentti: e.target.value })}
+          className="border border-gray-200 rounded px-2 py-1 text-sm w-full"
+          placeholder="Valinnainen viite"
         />
       </div>
     </div>

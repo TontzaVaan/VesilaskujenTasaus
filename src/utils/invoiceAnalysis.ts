@@ -25,7 +25,16 @@ export type KiinteistoveroTulos = {
   tyyppi: 'kiinteistovero';
   vuosi: number;
   maapohjaVero: number;
+  jaettuTonttivero?: number;
   rakennukset: { nimi: string; omistajaAvain: 'op1' | 'op2' | null; maara: number }[];
+};
+
+export type MaksuTulos = {
+  tyyppi: 'maksu';
+  paiva: string;        // YYYY-MM-DD
+  maara: number;
+  osapuoli: 'op1' | 'op2' | null;
+  kommentti?: string;
 };
 
 export type TunnistamatonTulos = {
@@ -33,11 +42,11 @@ export type TunnistamatonTulos = {
   syy: string;
 };
 
-export type AnalyysiTulos = VesilaskuTulos | KiinteistoveroTulos | TunnistamatonTulos;
+export type AnalyysiTulos = VesilaskuTulos | KiinteistoveroTulos | MaksuTulos | TunnistamatonTulos;
 
 const ANALYYSI_MALLI = 'claude-haiku-4-5-20251001';
 
-const SYSTEM_PROMPT = `You are analyzing a Finnish utility or property tax bill image. Return ONLY a valid JSON object — no markdown, no prose, no code fences.
+const SYSTEM_PROMPT = `You are analyzing a Finnish utility or property tax bill image, or a bank deposit/payment receipt. Return ONLY a valid JSON object — no markdown, no prose, no code fences.
 
 If it is a water bill (vesilaskut / vesilasku):
 Return: { "tyyppi": "vesilasku", "vuosi": <YYYY>, "kuukausi": <1-12>, "erapaiva": "<YYYY-MM-DD>", "perusmaksu": <number>, "kayttomaksu": <number>, "kommentti": "<optional notes or empty string>" }
@@ -46,12 +55,20 @@ Return: { "tyyppi": "vesilasku", "vuosi": <YYYY>, "kuukausi": <1-12>, "erapaiva"
 - All euro amounts as plain numbers (no currency symbols).
 
 If it is a Finnish property tax bill (kiinteistöveropäätös / fastighetsskatt):
-Return: { "tyyppi": "kiinteistovero", "vuosi": <YYYY>, "maapohjaVero": <number or 0>, "rakennukset": [ { "nimi": "<building description from bill>", "omistajaAvain": "<op1|op2|null>", "maara": <number> } ] }
-- maapohjaVero = the tax amount for tontti/maapohja (plot/land). Use 0 if not present.
-- For each building listed: extract its description (e.g. "Pientalo nro 1", "Pientalo nro 2", "Autotalli") and its tax amount.
-- Ownership mapping: "Pientalo nro 1" or the first detached house → omistajaAvain "op2". "Pientalo nro 2" or the second detached house → omistajaAvain "op1". Outbuildings/garages shared or unclear → omistajaAvain null. If you cannot determine ownership, use null.
+Return: { "tyyppi": "kiinteistovero", "vuosi": <YYYY>, "maapohjaVero": <number or 0>, "jaettuTonttivero": <number or 0>, "rakennukset": [ { "nimi": "<building description from bill>", "omistajaAvain": "<op1|op2|null>", "maara": <number> } ] }
+- maapohjaVero = the tax amount for the MAIN plot/land (tontti/maapohja) ONLY. Do NOT include Keskipelto here.
+- jaettuTonttivero = the tax amount for any additional land area labeled "Keskipelto" or similar secondary field/land. Use 0 if not present.
+- For each building listed: extract its description and its tax amount.
+- Ownership mapping: "Pientalo nro 1" or the first detached house → omistajaAvain "op2". "Pientalo nro 2" or the second detached house → omistajaAvain "op1". "Autokatos" (car shelter/carport), even if listed as "Rakennus nro 2" or "Rakennus nro 3" → omistajaAvain "op1". Other outbuildings/garages shared or unclear → omistajaAvain null.
 
-If the image is not a recognizable Finnish bill, return: { "tyyppi": "tunnistamaton", "syy": "<brief explanation in Finnish>" }`;
+If it is a bank payment confirmation, deposit receipt, or account transfer showing someone paying money (tilisiirto, maksukuitti, tilitapahtuma):
+Return: { "tyyppi": "maksu", "paiva": "<YYYY-MM-DD>", "maara": <number>, "osapuoli": "<op1|op2|null>", "kommentti": "<optional notes or empty string>" }
+- paiva = the payment date (not the value date). Format YYYY-MM-DD.
+- maara = the euro amount paid (positive number).
+- osapuoli: if the payer name contains "Pakarinen" → "op1". If the payer name contains "Pusa" → "op2". If unknown → null.
+- kommentti = any reference or message shown on the receipt.
+
+If the image is not a recognizable Finnish bill or payment receipt, return: { "tyyppi": "tunnistamaton", "syy": "<brief explanation in Finnish>" }`;
 
 async function fileToBase64(file: File): Promise<string> {
   const buffer = await file.arrayBuffer();
@@ -92,12 +109,24 @@ function validateTulos(raw: unknown): AnalyysiTulos {
           };
         })
       : [];
+    const jaettuTonttivero = Number(obj.jaettuTonttivero) || 0;
     return {
       tyyppi: 'kiinteistovero',
       vuosi: Number(obj.vuosi) || new Date().getFullYear(),
       maapohjaVero: Number(obj.maapohjaVero) || 0,
+      ...(jaettuTonttivero > 0 ? { jaettuTonttivero } : {}),
       rakennukset,
     };
+  }
+  if (obj.tyyppi === 'maksu') {
+    const osapuoli = obj.osapuoli === 'op1' ? 'op1' : obj.osapuoli === 'op2' ? 'op2' : null;
+    return {
+      tyyppi: 'maksu',
+      paiva: String(obj.paiva ?? ''),
+      maara: Number(obj.maara) || 0,
+      osapuoli,
+      kommentti: obj.kommentti ? String(obj.kommentti) : undefined,
+    } satisfies MaksuTulos;
   }
   return {
     tyyppi: 'tunnistamaton',

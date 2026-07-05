@@ -34,6 +34,7 @@ export interface Mittarit {
 
 export interface KiinteistoveroTontti {
   maapohjaVero: number;
+  jaettuTonttivero?: number; // Keskipelto — split 50/50
   liitteet?: string[];
 }
 
@@ -86,6 +87,8 @@ export interface TasausLaskelma {
   op2VesiKulut: number;
   op1MaapohjaVero: number;
   op2MaapohjaVero: number;
+  op1JaettuTonttivero: number;
+  op2JaettuTonttivero: number;
   op1RakennusVero: number;
   op2RakennusVero: number;
   op1MuutKulut: number;

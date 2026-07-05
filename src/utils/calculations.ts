@@ -81,6 +81,11 @@ export function laskeTasaus(
   const op1MaapohjaVero = maapohjaVero * op1TonttiPct;
   const op2MaapohjaVero = maapohjaVero * op2TonttiPct;
 
+  // --- Jaettu tonttivero (Keskipelto) — 50/50 ---
+  const jaettu = vuosiData.kiinteistoveroTontti.jaettuTonttivero ?? 0;
+  const op1JaettuTonttivero = jaettu * 0.5;
+  const op2JaettuTonttivero = jaettu * 0.5;
+
   // --- Rakennusverot ---
   const op1RakennusVero = vuosiData.rakennusverot
     .filter((r) => r.omistajaId === op1Id)
@@ -101,9 +106,9 @@ export function laskeTasaus(
 
   // --- Yhteensä ---
   const op1KokonaisKulut =
-    op1VesiKulut + op1MaapohjaVero + op1RakennusVero + op1MuutKulut;
+    op1VesiKulut + op1MaapohjaVero + op1JaettuTonttivero + op1RakennusVero + op1MuutKulut;
   const op2KokonaisKulut =
-    op2VesiKulut + op2MaapohjaVero + op2RakennusVero + op2MuutKulut;
+    op2VesiKulut + op2MaapohjaVero + op2JaettuTonttivero + op2RakennusVero + op2MuutKulut;
 
   // --- Saldot ---
   const op1Saldo = op1Maksut - op1KokonaisKulut;
@@ -122,6 +127,8 @@ export function laskeTasaus(
     op2VesiKulut,
     op1MaapohjaVero,
     op2MaapohjaVero,
+    op1JaettuTonttivero,
+    op2JaettuTonttivero,
     op1RakennusVero,
     op2RakennusVero,
     op1MuutKulut,

@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import type { VuosiData, AppData } from '../types';
-import { laskeTasaus, tunnistaDublikaatit, formatEuro, formatPct } from '../utils/calculations';
+import { laskeTasaus, tunnistaDublikaatit, formatEuro, formatPct, KUUKAUDET } from '../utils/calculations';
 import Kuvaajat from './Kuvaajat';
 
 interface Props {
@@ -174,6 +174,7 @@ export default function Tasaus({ vuosiData, appData, dublikaattiKuukaudet }: Pro
               <th className="pb-1.5 text-left font-medium">Osapuoli</th>
               <th className="pb-1.5 text-right font-medium">Tonttiosuus</th>
               <th className="pb-1.5 text-right font-medium">Maapohja</th>
+              {t.op1JaettuTonttivero > 0 && <th className="pb-1.5 text-right font-medium">Keskipelto</th>}
               <th className="pb-1.5 text-right font-medium">Rakennukset</th>
               <th className="pb-1.5 text-right font-medium">Yhteensä</th>
             </tr>
@@ -184,14 +185,135 @@ export default function Tasaus({ vuosiData, appData, dublikaattiKuukaudet }: Pro
                 <td className="py-1.5">{op.nimi}</td>
                 <td className="py-1.5 text-right">{formatPct(i === 0 ? t.op1TonttiPct : t.op2TonttiPct)}</td>
                 <td className="py-1.5 text-right">{formatEuro(i === 0 ? t.op1MaapohjaVero : t.op2MaapohjaVero)}</td>
+                {t.op1JaettuTonttivero > 0 && (
+                  <td className="py-1.5 text-right">{formatEuro(i === 0 ? t.op1JaettuTonttivero : t.op2JaettuTonttivero)}</td>
+                )}
                 <td className="py-1.5 text-right">{formatEuro(i === 0 ? t.op1RakennusVero : t.op2RakennusVero)}</td>
                 <td className="py-1.5 text-right font-medium">
-                  {formatEuro((i === 0 ? t.op1MaapohjaVero : t.op2MaapohjaVero) + (i === 0 ? t.op1RakennusVero : t.op2RakennusVero))}
+                  {formatEuro(
+                    (i === 0 ? t.op1MaapohjaVero : t.op2MaapohjaVero) +
+                    (i === 0 ? t.op1JaettuTonttivero : t.op2JaettuTonttivero) +
+                    (i === 0 ? t.op1RakennusVero : t.op2RakennusVero)
+                  )}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Kiinteistöveron erittely */}
+      <div className="border border-gray-200 rounded-lg p-4">
+        <h3 className="font-semibold text-gray-700 mb-3">Kiinteistöveron erittely</h3>
+        <div className="overflow-x-auto">
+          <table className="text-sm w-full">
+            <thead>
+              <tr className="border-b border-gray-200 text-gray-500">
+                <th className="pb-1.5 text-left font-medium">Erä</th>
+                <th className="pb-1.5 text-right font-medium">Yhteensä</th>
+                <th className="pb-1.5 text-right font-medium">{osapuolet[0].nimi}</th>
+                <th className="pb-1.5 text-right font-medium">{osapuolet[1].nimi}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-gray-100">
+                <td className="py-1.5">Maapohja ({formatPct(t.op1TonttiPct)} / {formatPct(t.op2TonttiPct)})</td>
+                <td className="py-1.5 text-right">{formatEuro(vuosiData.kiinteistoveroTontti.maapohjaVero)}</td>
+                <td className="py-1.5 text-right">{formatEuro(t.op1MaapohjaVero)}</td>
+                <td className="py-1.5 text-right">{formatEuro(t.op2MaapohjaVero)}</td>
+              </tr>
+              {t.op1JaettuTonttivero > 0 && (
+                <tr className="border-b border-gray-100">
+                  <td className="py-1.5">Keskipelto (50 % / 50 %)</td>
+                  <td className="py-1.5 text-right">{formatEuro((vuosiData.kiinteistoveroTontti.jaettuTonttivero ?? 0))}</td>
+                  <td className="py-1.5 text-right">{formatEuro(t.op1JaettuTonttivero)}</td>
+                  <td className="py-1.5 text-right">{formatEuro(t.op2JaettuTonttivero)}</td>
+                </tr>
+              )}
+              {vuosiData.rakennusverot.map((r) => {
+                const omistaja = r.omistajaId === osapuolet[0].id ? osapuolet[0].nimi : osapuolet[1].nimi;
+                const isOp1 = r.omistajaId === osapuolet[0].id;
+                return (
+                  <tr key={r.id} className="border-b border-gray-100">
+                    <td className="py-1.5">{r.nimi || 'Rakennus'} (100% {omistaja})</td>
+                    <td className="py-1.5 text-right">{formatEuro(r.maara)}</td>
+                    <td className="py-1.5 text-right">{isOp1 ? formatEuro(r.maara) : '–'}</td>
+                    <td className="py-1.5 text-right">{isOp1 ? '–' : formatEuro(r.maara)}</td>
+                  </tr>
+                );
+              })}
+              <tr className="border-t border-gray-300 font-semibold">
+                <td className="py-1.5">Yhteensä</td>
+                <td className="py-1.5 text-right">{formatEuro(t.op1MaapohjaVero + t.op2MaapohjaVero + t.op1JaettuTonttivero + t.op2JaettuTonttivero + t.op1RakennusVero + t.op2RakennusVero)}</td>
+                <td className="py-1.5 text-right">{formatEuro(t.op1MaapohjaVero + t.op1JaettuTonttivero + t.op1RakennusVero)}</td>
+                <td className="py-1.5 text-right">{formatEuro(t.op2MaapohjaVero + t.op2JaettuTonttivero + t.op2RakennusVero)}</td>
+              </tr>
+            </tbody>
+          </table>
+          {(() => {
+            const total = vuosiData.kiinteistoveroTontti.maapohjaVero + (vuosiData.kiinteistoveroTontti.jaettuTonttivero ?? 0) + vuosiData.rakennusverot.reduce((s, r) => s + r.maara, 0);
+            const sum = t.op1MaapohjaVero + t.op2MaapohjaVero + t.op1JaettuTonttivero + t.op2JaettuTonttivero + t.op1RakennusVero + t.op2RakennusVero;
+            const ok = Math.abs(total - sum) < 0.02;
+            return (
+              <div className={`mt-2 text-xs ${ok ? 'text-green-700' : 'text-red-600'}`}>
+                {ok ? '✓ Tarkistus: summat täsmäävät' : `⚠ Tarkistus: eroa ${formatEuro(Math.abs(total - sum))}`}
+              </div>
+            );
+          })()}
+        </div>
+      </div>
+
+      {/* Vesilaskujen tilanne */}
+      <div className="border border-gray-200 rounded-lg p-4">
+        <h3 className="font-semibold text-gray-700 mb-3">Vesilaskujen tilanne</h3>
+        <div className="overflow-x-auto">
+          <table className="text-sm w-full">
+            <thead>
+              <tr className="border-b border-gray-200 text-gray-500">
+                <th className="pb-1.5 text-left font-medium">Kuukausi</th>
+                <th className="pb-1.5 text-right font-medium">Perusmaksu</th>
+                <th className="pb-1.5 text-right font-medium">Käyttömaksu</th>
+                <th className="pb-1.5 text-left font-medium pl-3">Tila</th>
+              </tr>
+            </thead>
+            <tbody>
+              {KUUKAUDET.map((kk, idx) => {
+                const kuukausi = idx + 1;
+                const v = vuosiData.vesilaskut.find((x) => x.kuukausi === kuukausi);
+                const isDuplikaatti = dublikaattiKuukaudet?.has(kuukausi);
+                const kirjattu = v && (v.perusmaksu > 0 || v.kayttomaksu > 0);
+                return (
+                  <tr key={kuukausi} className={`border-b border-gray-100 ${isDuplikaatti ? 'bg-amber-50' : ''}`}>
+                    <td className="py-1.5">{kk}</td>
+                    <td className={`py-1.5 text-right ${isDuplikaatti ? 'line-through text-gray-400' : ''}`}>
+                      {kirjattu ? formatEuro(v!.perusmaksu) : '–'}
+                    </td>
+                    <td className={`py-1.5 text-right ${isDuplikaatti ? 'line-through text-gray-400' : ''}`}>
+                      {kirjattu ? formatEuro(v!.kayttomaksu) : '–'}
+                    </td>
+                    <td className="py-1.5 pl-3">
+                      {isDuplikaatti
+                        ? <span className="text-amber-700 text-xs">⊘ duplikaatti</span>
+                        : kirjattu
+                        ? <span className="text-green-700 text-xs">✓ kirjattu</span>
+                        : <span className="text-gray-400 text-xs">⚠ puuttuu</span>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr className="border-t border-gray-300 font-semibold">
+                <td className="py-1.5">Yhteensä</td>
+                <td className="py-1.5 text-right">{formatEuro(vuosiData.vesilaskut.filter(v => !dublikaattiKuukaudet?.has(v.kuukausi)).reduce((s, v) => s + v.perusmaksu, 0))}</td>
+                <td className="py-1.5 text-right">{formatEuro(vuosiData.vesilaskut.filter(v => !dublikaattiKuukaudet?.has(v.kuukausi)).reduce((s, v) => s + v.kayttomaksu, 0))}</td>
+                <td className="py-1.5 pl-3 text-xs text-gray-500">
+                  {vuosiData.vesilaskut.filter(v => (v.perusmaksu > 0 || v.kayttomaksu > 0) && !dublikaattiKuukaudet?.has(v.kuukausi)).length}/12 kirjattu
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       </div>
       {/* Vertailu edellisiin vuosiin */}
       {vertailuVuodet.length > 0 && (

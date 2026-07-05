@@ -81,7 +81,7 @@ export default function Kiinteistovero({
               value={kiinteistoveroTontti.maapohjaVero || ''}
               onChange={(e) =>
                 onChange(
-                  { maapohjaVero: parseFloat(e.target.value) || 0 },
+                  { ...kiinteistoveroTontti, maapohjaVero: parseFloat(e.target.value) || 0 },
                   rakennusverot
                 )
               }
@@ -98,6 +98,31 @@ export default function Kiinteistovero({
               {osapuolet[1].nimi} {tontti.op2Neliometrit} m² ({formatPct(op2Pct)})</>
             )}
           </div>
+        </div>
+        <div className="flex items-end gap-6 flex-wrap mb-4">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">
+              Lisätontti (Keskipelto) — jaetaan 50/50 €
+            </label>
+            <input
+              type="number"
+              value={kiinteistoveroTontti.jaettuTonttivero ?? ''}
+              onChange={(e) =>
+                onChange(
+                  { ...kiinteistoveroTontti, jaettuTonttivero: parseFloat(e.target.value) || undefined },
+                  rakennusverot
+                )
+              }
+              step="0.01"
+              disabled={lukittu}
+              className="border border-gray-200 rounded px-3 py-1.5 w-36 text-right disabled:bg-gray-50 disabled:text-gray-500"
+            />
+          </div>
+          {(kiinteistoveroTontti.jaettuTonttivero ?? 0) > 0 && (
+            <div className="text-sm text-gray-500">
+              Kumpikin: {formatEuro((kiinteistoveroTontti.jaettuTonttivero ?? 0) / 2)}
+            </div>
+          )}
         </div>
         <Liitteet
           liiteIds={kiinteistoveroTontti.liitteet ?? []}

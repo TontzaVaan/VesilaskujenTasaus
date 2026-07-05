@@ -15,6 +15,7 @@ import GitHubSync from './components/GitHubSync';
 import BulkImport from './components/BulkImport';
 import { tunnistaDublikaatit } from './utils/calculations';
 import type { KiinteistoveroTulos } from './utils/invoiceAnalysis';
+import type { MaksuPaivitys } from './components/BulkImport';
 
 type Valilehti = 'maksut' | 'vesilaskut' | 'vesikulutus' | 'kiinteistovero' | 'muut' | 'tasaus';
 
@@ -111,7 +112,8 @@ export default function App() {
   const kasitteleBulkImport = (
     vesilaskuPaivitykset: Partial<Vesilasku>[],
     kiinteistoTulos: KiinteistoveroTulos | null,
-    liiteIdt: Record<string, string>
+    liiteIdt: Record<string, string>,
+    maksuPaivitykset: MaksuPaivitys[] = []
   ) => {
     if (!aktiivinen) return;
 
@@ -134,6 +136,8 @@ export default function App() {
       const uusiTontti = {
         ...aktiivinen.kiinteistoveroTontti,
         ...(kiinteistoTulos.maapohjaVero > 0 ? { maapohjaVero: kiinteistoTulos.maapohjaVero } : {}),
+        ...(kiinteistoTulos.jaettuTonttivero != null && kiinteistoTulos.jaettuTonttivero > 0
+          ? { jaettuTonttivero: kiinteistoTulos.jaettuTonttivero } : {}),
         liitteet: liiteId
           ? [...(aktiivinen.kiinteistoveroTontti.liitteet ?? []), liiteId]
           : aktiivinen.kiinteistoveroTontti.liitteet,
@@ -164,6 +168,28 @@ export default function App() {
         kiinteistoveroTontti: uusiTontti,
         rakennusverot: [...olemassaOlevat, ...(uudetRakennukset as RakennusVero[])],
       });
+    }
+
+    if (maksuPaivitykset.length > 0) {
+      const vuodetMuutos = new Map<number, typeof data.vuodet[0]>();
+      for (const mp of maksuPaivitykset) {
+        const kohdeVuosiData = vuodetMuutos.get(mp.vuosi) ?? data.vuodet.find((v) => v.vuosi === mp.vuosi);
+        if (!kohdeVuosiData) continue;
+        const uusiMaksu = {
+          id: crypto.randomUUID(),
+          paiva: mp.paiva,
+          osapuoliId: mp.osapuoliId,
+          maara: mp.maara,
+          kommentti: mp.kommentti,
+        };
+        vuodetMuutos.set(mp.vuosi, {
+          ...kohdeVuosiData,
+          maksut: [...kohdeVuosiData.maksut, uusiMaksu],
+        });
+      }
+      for (const [vuosiNum, vuosiMuutos] of vuodetMuutos) {
+        paivitaVuosi(vuosiNum, { maksut: vuosiMuutos.maksut });
+      }
     }
 
     setBulkImportAuki(false);
