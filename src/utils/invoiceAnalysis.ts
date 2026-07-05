@@ -113,7 +113,11 @@ export async function analysoi(file: File, apiKey: string): Promise<AnalyysiTulo
     return { tyyppi: 'tunnistamaton', syy: 'Tiedoston lukeminen epäonnistui' };
   }
 
-  const mediaType = file.type || 'image/jpeg';
+  const rawType = file.type || 'image/jpeg';
+  if (rawType === 'image/heic' || rawType === 'image/heif') {
+    return { tyyppi: 'tunnistamaton', syy: 'HEIC-muoto ei ole tuettu — muunna kuva JPEG-muotoon' };
+  }
+  const mediaType = rawType;
 
   let response: Response;
   try {

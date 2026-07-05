@@ -39,7 +39,7 @@ function isHeic(file: File): boolean {
   );
 }
 
-async function muunnaJaLisaa(file: File): Promise<File> {
+async function muunnaJaLisaa(file: File): Promise<File | null> {
   if (!isHeic(file)) return file;
   try {
     const result = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
@@ -47,7 +47,7 @@ async function muunnaJaLisaa(file: File): Promise<File> {
     const nimi = file.name.replace(/\.(heic|heif)$/i, '.jpg');
     return new File([blob], nimi, { type: 'image/jpeg' });
   } catch {
-    return file;
+    return null;
   }
 }
 
@@ -64,6 +64,10 @@ export default function BulkImport({ vuosi, vuosiData, osapuolet, onConfirm, onC
     const uudet: TiedostoTila[] = [];
     for (const f of arr) {
       const muunnettu = await muunnaJaLisaa(f);
+      if (!muunnettu) {
+        alert(`HEIC-muunnos epäonnistui: ${f.name}\nVie kuva JPEG-muotoon ja yritä uudelleen.`);
+        continue;
+      }
       const url = URL.createObjectURL(muunnettu);
       uudet.push({
         tiedosto: muunnettu,

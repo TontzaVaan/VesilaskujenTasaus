@@ -10,6 +10,8 @@ export default defineConfig({
         target: 'https://api.anthropic.com',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/anthropic/, ''),
+        timeout: 120000,
+        proxyTimeout: 120000,
       },
     },
   },
