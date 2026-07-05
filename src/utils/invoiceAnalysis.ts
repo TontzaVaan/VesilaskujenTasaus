@@ -37,12 +37,24 @@ export type MaksuTulos = {
   kommentti?: string;
 };
 
+export type TilioteMaksu = {
+  paiva: string;        // YYYY-MM-DD
+  maara: number;        // positiivinen €
+  osapuoli: 'op1' | 'op2' | null;
+  kommentti?: string;   // maksajan nimi tms.
+};
+
+export type TilioteTulos = {
+  tyyppi: 'tiliote';
+  maksut: TilioteMaksu[];
+};
+
 export type TunnistamatonTulos = {
   tyyppi: 'tunnistamaton';
   syy: string;
 };
 
-export type AnalyysiTulos = VesilaskuTulos | KiinteistoveroTulos | MaksuTulos | TunnistamatonTulos;
+export type AnalyysiTulos = VesilaskuTulos | KiinteistoveroTulos | MaksuTulos | TilioteTulos | TunnistamatonTulos;
 
 const ANALYYSI_MALLI = 'claude-haiku-4-5-20251001';
 
@@ -61,7 +73,15 @@ Return: { "tyyppi": "kiinteistovero", "vuosi": <YYYY>, "maapohjaVero": <number o
 - For each building listed: extract its description and its tax amount.
 - Ownership mapping: "Pientalo nro 1" or the first detached house → omistajaAvain "op2". "Pientalo nro 2" or the second detached house → omistajaAvain "op1". "Autokatos" (car shelter/carport), even if listed as "Rakennus nro 2" or "Rakennus nro 3" → omistajaAvain "op1". Other outbuildings/garages shared or unclear → omistajaAvain null.
 
-If it is a bank payment confirmation, deposit receipt, or account transfer showing someone paying money (tilisiirto, maksukuitti, tilitapahtuma):
+If it is a bank account statement (tiliote) showing a list of multiple transactions:
+Return: { "tyyppi": "tiliote", "maksut": [ { "paiva": "<YYYY-MM-DD>", "maara": <number>, "osapuoli": "<op1|op2|null>", "kommentti": "<payer name>" }, ... ] }
+- Include ONLY incoming/credit transactions (positive amounts deposited to the account by Pusa or Pakarinen). Skip outgoing payments (HSY Vesi, utility bills, etc.).
+- osapuoli: if payer name contains "Pakarinen" → "op1"; if payer name contains "Pusa" → "op2"; otherwise null.
+- maara = positive euro amount (no minus sign).
+- kommentti = the payer's full name as shown on the statement.
+- If the image shows a scrollable list of transactions (tiliote/account history view), use this type even if only a few transactions are visible.
+
+If it is a single bank payment confirmation, deposit receipt, or account transfer showing one payment (tilisiirto, maksukuitti, tilitapahtuma):
 Return: { "tyyppi": "maksu", "paiva": "<YYYY-MM-DD>", "maara": <number>, "osapuoli": "<op1|op2|null>", "kommentti": "<optional notes or empty string>" }
 - paiva = the payment date (not the value date). Format YYYY-MM-DD.
 - maara = the euro amount paid (positive number).
@@ -127,6 +147,21 @@ function validateTulos(raw: unknown): AnalyysiTulos {
       osapuoli,
       kommentti: obj.kommentti ? String(obj.kommentti) : undefined,
     } satisfies MaksuTulos;
+  }
+  if (obj.tyyppi === 'tiliote') {
+    const maksut: TilioteMaksu[] = Array.isArray(obj.maksut)
+      ? obj.maksut.map((m: unknown) => {
+          const mv = m as Record<string, unknown>;
+          const osapuoli = mv.osapuoli === 'op1' ? 'op1' : mv.osapuoli === 'op2' ? 'op2' : null;
+          return {
+            paiva: String(mv.paiva ?? ''),
+            maara: Number(mv.maara) || 0,
+            osapuoli,
+            kommentti: mv.kommentti ? String(mv.kommentti) : undefined,
+          };
+        })
+      : [];
+    return { tyyppi: 'tiliote', maksut } satisfies TilioteTulos;
   }
   return {
     tyyppi: 'tunnistamaton',

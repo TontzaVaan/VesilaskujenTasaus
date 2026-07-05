@@ -3,7 +3,7 @@ import heic2any from 'heic2any';
 import { tallennaTiedosto } from '../utils/fileStorage';
 import type { VuosiData, Vesilasku, Osapuoli } from '../types';
 import { analysoi, lataaAnthropicKey } from '../utils/invoiceAnalysis';
-import type { AnalyysiTulos, VesilaskuTulos, KiinteistoveroTulos, MaksuTulos } from '../utils/invoiceAnalysis';
+import type { AnalyysiTulos, VesilaskuTulos, KiinteistoveroTulos, MaksuTulos, TilioteTulos, TilioteMaksu } from '../utils/invoiceAnalysis';
 import { KUUKAUDET } from '../utils/calculations';
 
 export interface MaksuPaivitys {
@@ -171,7 +171,7 @@ export default function BulkImport({ vuosi, vuosiData, osapuolet, onConfirm, onC
     setVaihe('tarkistus');
   };
 
-  const paivitaMuokattuTulos = (idx: number, paivitys: Partial<VesilaskuTulos> | Partial<KiinteistoveroTulos> | Partial<MaksuTulos>) => {
+  const paivitaMuokattuTulos = (idx: number, paivitys: Partial<VesilaskuTulos> | Partial<KiinteistoveroTulos> | Partial<MaksuTulos> | Partial<TilioteTulos>) => {
     setTiedostot((prev) =>
       prev.map((t, i) =>
         i === idx
@@ -228,6 +228,19 @@ export default function BulkImport({ vuosi, vuosiData, osapuolet, onConfirm, onC
             maara: mt.maara,
             kommentti: mt.kommentti,
           });
+        }
+      } else if (t.muokattuTulos.tyyppi === 'tiliote') {
+        for (const m of (t.muokattuTulos as TilioteTulos).maksut) {
+          const osapuoliId = m.osapuoli === 'op1' ? osapuolet[0].id : m.osapuoli === 'op2' ? osapuolet[1].id : null;
+          if (osapuoliId && m.paiva && m.maara > 0) {
+            maksuPaivitykset.push({
+              vuosi: parseInt(m.paiva.slice(0, 4)),
+              osapuoliId,
+              paiva: m.paiva,
+              maara: m.maara,
+              kommentti: m.kommentti,
+            });
+          }
         }
       }
     }
@@ -322,6 +335,9 @@ export default function BulkImport({ vuosi, vuosiData, osapuolet, onConfirm, onC
                   {t.status === 'valmis' && t.tulos?.tyyppi === 'maksu' && (
                     <span className="text-xs text-green-600">✓ Maksu</span>
                   )}
+                  {t.status === 'valmis' && t.tulos?.tyyppi === 'tiliote' && (
+                    <span className="text-xs text-green-600">✓ Tiliote ({(t.tulos as TilioteTulos).maksut.length} maksua)</span>
+                  )}
                 </div>
               ))}
             </div>
@@ -347,6 +363,7 @@ export default function BulkImport({ vuosi, vuosiData, osapuolet, onConfirm, onC
                         {t.muokattuTulos?.tyyppi === 'vesilasku' && 'Vesilasku'}
                         {t.muokattuTulos?.tyyppi === 'kiinteistovero' && 'Kiinteistövero'}
                         {t.muokattuTulos?.tyyppi === 'maksu' && 'Maksu'}
+                        {t.muokattuTulos?.tyyppi === 'tiliote' && `Tiliote (${(t.muokattuTulos as TilioteTulos).maksut.length} maksua)`}
                         {t.muokattuTulos?.tyyppi === 'tunnistamaton' && '⚠ Ei tunnistettu'}
                       </p>
                     </div>
@@ -387,6 +404,15 @@ export default function BulkImport({ vuosi, vuosiData, osapuolet, onConfirm, onC
                       vuosi={vuosi}
                       osapuolet={osapuolet}
                       onChange={(p) => paivitaMuokattuTulos(i, p)}
+                    />
+                  )}
+
+                  {!t.ohita && t.muokattuTulos?.tyyppi === 'tiliote' && (
+                    <TiliotetKortti
+                      tulos={t.muokattuTulos as TilioteTulos}
+                      vuosi={vuosi}
+                      osapuolet={osapuolet}
+                      onChange={(tiliote) => paivitaMuokattuTulos(i, tiliote)}
                     />
                   )}
 
@@ -585,6 +611,105 @@ function MaksuKortti({
           placeholder="Valinnainen viite"
         />
       </div>
+    </div>
+  );
+}
+
+function TiliotetKortti({
+  tulos,
+  vuosi,
+  osapuolet,
+  onChange,
+}: {
+  tulos: TilioteTulos;
+  vuosi: number;
+  osapuolet: [Osapuoli, Osapuoli];
+  onChange: (t: TilioteTulos) => void;
+}) {
+  const paivitaRivi = (idx: number, kentta: keyof TilioteMaksu, arvo: string | number | null) => {
+    const uudet = tulos.maksut.map((m, i) => (i === idx ? { ...m, [kentta]: arvo } : m));
+    onChange({ ...tulos, maksut: uudet });
+  };
+
+  const poistaRivi = (idx: number) => {
+    onChange({ ...tulos, maksut: tulos.maksut.filter((_, i) => i !== idx) });
+  };
+
+  const lisaaRivi = () => {
+    const uusi: TilioteMaksu = { paiva: `${vuosi}-01-01`, maara: 0, osapuoli: null };
+    onChange({ ...tulos, maksut: [...tulos.maksut, uusi] });
+  };
+
+  const hasNull = tulos.maksut.some((m) => m.osapuoli === null);
+
+  return (
+    <div className="space-y-2">
+      {hasNull && (
+        <div className="bg-amber-50 border border-amber-200 rounded px-3 py-1.5 text-xs text-amber-800">
+          ⚠ Joidenkin maksujen maksajaa ei tunnistettu — valitse maksaja jokaiselle riville
+        </div>
+      )}
+      <table className="w-full text-xs border-collapse">
+        <thead>
+          <tr className="text-gray-400 border-b border-gray-200">
+            <th className="text-left pb-1 pr-2 font-medium">Päivämäärä</th>
+            <th className="text-left pb-1 pr-2 font-medium">Maksaja</th>
+            <th className="text-right pb-1 pr-2 font-medium">Summa €</th>
+            <th className="pb-1 font-medium"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {tulos.maksut.map((m, i) => (
+            <tr key={i} className={`border-b border-gray-100 ${m.osapuoli === null ? 'bg-amber-50' : ''}`}>
+              <td className="py-1 pr-2">
+                <input
+                  type="date"
+                  value={m.paiva}
+                  onChange={(e) => paivitaRivi(i, 'paiva', e.target.value)}
+                  className="border border-gray-200 rounded px-1.5 py-0.5 text-xs w-full"
+                />
+              </td>
+              <td className="py-1 pr-2">
+                <select
+                  value={m.osapuoli ?? ''}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    paivitaRivi(i, 'osapuoli', v === 'op1' ? 'op1' : v === 'op2' ? 'op2' : null);
+                  }}
+                  className={`border rounded px-1.5 py-0.5 text-xs w-full ${m.osapuoli === null ? 'border-amber-400' : 'border-gray-200'}`}
+                >
+                  <option value="">— valitse —</option>
+                  <option value="op1">{osapuolet[0].nimi}</option>
+                  <option value="op2">{osapuolet[1].nimi}</option>
+                </select>
+              </td>
+              <td className="py-1 pr-2">
+                <input
+                  type="number"
+                  value={m.maara || ''}
+                  onChange={(e) => paivitaRivi(i, 'maara', parseFloat(e.target.value) || 0)}
+                  step="0.01"
+                  className="border border-gray-200 rounded px-1.5 py-0.5 text-xs w-full text-right"
+                />
+              </td>
+              <td className="py-1">
+                <button
+                  onClick={() => poistaRivi(i)}
+                  className="text-gray-400 hover:text-red-500 text-base leading-none px-1"
+                >
+                  ×
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <button
+        onClick={lisaaRivi}
+        className="text-xs text-blue-600 hover:text-blue-800 mt-1"
+      >
+        + Lisää rivi
+      </button>
     </div>
   );
 }
