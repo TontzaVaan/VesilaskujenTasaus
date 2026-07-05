@@ -121,7 +121,7 @@ export async function analysoi(file: File, apiKey: string): Promise<AnalyysiTulo
 
   let response: Response;
   try {
-    response = await fetch('/api/anthropic/v1/messages', {
+    response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'x-api-key': apiKey,
