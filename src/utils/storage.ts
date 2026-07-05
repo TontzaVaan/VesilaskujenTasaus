@@ -241,6 +241,19 @@ export function defaultAppData(): AppData {
   };
 }
 
+function migroi(data: AppData): AppData {
+  const historia = historiaData();
+  const olemassaOlevat = new Set(data.vuodet.map((v) => v.vuosi));
+  const puuttuvat = historia.filter((v) => !olemassaOlevat.has(v.vuosi));
+  if (puuttuvat.length === 0) return data;
+  const uusi = {
+    ...data,
+    vuodet: [...data.vuodet, ...puuttuvat].sort((a, b) => a.vuosi - b.vuosi),
+  };
+  tallennaData(uusi);
+  return uusi;
+}
+
 export function lataaData(): AppData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -252,7 +265,7 @@ export function lataaData(): AppData {
       ...v,
       mittarit: { ...tyhjaMittarit(), ...v.mittarit },
     }));
-    return data;
+    return migroi(data);
   } catch {
     return defaultAppData();
   }

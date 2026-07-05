@@ -4,6 +4,7 @@ import { lataaData, tallennaData, tyhjaVuosiData } from '../utils/storage';
 
 export function useAppData() {
   const [data, setData] = useState<AppData>(() => lataaData());
+  const [githubSnapshot, setGithubSnapshot] = useState<string | null>(null);
 
   const paivita = useCallback((uusiData: AppData) => {
     setData(uusiData);
@@ -57,5 +58,14 @@ export function useAppData() {
     tallennaData(uusiData);
   }, []);
 
-  return { data, paivita, paivitaVuosi, lisaaVuosi, paivitaAsetukset, alustaData };
+  return {
+    data,
+    paivita,
+    paivitaVuosi,
+    lisaaVuosi,
+    paivitaAsetukset,
+    alustaData,
+    githubSnapshot,
+    setGithubSnapshot,
+  };
 }

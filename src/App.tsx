@@ -11,6 +11,7 @@ import MuutKulut from './components/MuutKulut';
 import Tasaus from './components/Tasaus';
 import Historia from './components/Historia';
 import Asetukset from './components/Asetukset';
+import GitHubSync from './components/GitHubSync';
 
 type Valilehti = 'maksut' | 'vesilaskut' | 'vesikulutus' | 'kiinteistovero' | 'muut' | 'tasaus';
 
@@ -49,7 +50,7 @@ function statusBadgeClass(status: VuosiStatus | undefined): string {
 }
 
 export default function App() {
-  const { data, paivitaVuosi, lisaaVuosi, paivitaAsetukset, alustaData } = useAppData();
+  const { data, paivitaVuosi, lisaaVuosi, paivitaAsetukset, alustaData, githubSnapshot, setGithubSnapshot } = useAppData();
   const importInputRef = useRef<HTMLInputElement>(null);
   const [importVirhe, setImportVirhe] = useState<string | null>(null);
   const [nakyma, setNakyma] = useState<number | 'historia'>(() => {
@@ -132,6 +133,12 @@ export default function App() {
               className="hidden"
             />
           </label>
+          <GitHubSync
+            data={data}
+            savedSnapshot={githubSnapshot}
+            onRevert={alustaData}
+            onSaveSuccess={setGithubSnapshot}
+          />
           <button
             onClick={() => setAsetuksetAuki(true)}
             className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5"
