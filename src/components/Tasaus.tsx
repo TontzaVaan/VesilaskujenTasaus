@@ -224,7 +224,7 @@ export default function Tasaus({ vuosiData, appData, dublikaattiKuukaudet }: Pro
               </tr>
               {t.op1JaettuTonttivero > 0 && (
                 <tr className="border-b border-gray-100">
-                  <td className="py-1.5">Keskipelto (50 % / 50 %)</td>
+                  <td className="py-1.5">Keskipelto ({formatPct(t.op1TonttiPct)} / {formatPct(t.op2TonttiPct)})</td>
                   <td className="py-1.5 text-right">{formatEuro((vuosiData.kiinteistoveroTontti.jaettuTonttivero ?? 0))}</td>
                   <td className="py-1.5 text-right">{formatEuro(t.op1JaettuTonttivero)}</td>
                   <td className="py-1.5 text-right">{formatEuro(t.op2JaettuTonttivero)}</td>
@@ -353,7 +353,7 @@ export default function Tasaus({ vuosiData, appData, dublikaattiKuukaudet }: Pro
                       <td className="py-1.5 text-right">{formatEuro(tv.op1Maksut)}</td>
                       <td className="py-1.5 text-right">{formatEuro(tv.op2Maksut)}</td>
                       <td className="py-1.5 text-right">{formatEuro(tv.op1VesiKulut + tv.op2VesiKulut)}</td>
-                      <td className="py-1.5 text-right">{formatEuro(tv.op1MaapohjaVero + tv.op2MaapohjaVero + tv.op1RakennusVero + tv.op2RakennusVero)}</td>
+                      <td className="py-1.5 text-right">{formatEuro(tv.op1MaapohjaVero + tv.op2MaapohjaVero + tv.op1JaettuTonttivero + tv.op2JaettuTonttivero + tv.op1RakennusVero + tv.op2RakennusVero)}</td>
                       <td className="py-1.5 text-right">{formatEuro(tv.op1MuutKulut + tv.op2MuutKulut)}</td>
                       <td className={`py-1.5 text-right ${tv.op1Saldo >= 0 ? 'text-green-700' : 'text-red-700'}`}>
                         {tv.op1Saldo > 0 ? '+' : ''}{formatEuro(tv.op1Saldo)}

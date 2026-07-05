@@ -102,7 +102,7 @@ export default function Kiinteistovero({
         <div className="flex items-end gap-6 flex-wrap mb-4">
           <div>
             <label className="block text-xs text-gray-500 mb-1">
-              Lisätontti (Keskipelto) — jaetaan 50/50 €
+              Lisätontti (Keskipelto) — jaetaan neliöosuuksien mukaan €
             </label>
             <input
               type="number"
@@ -120,7 +120,8 @@ export default function Kiinteistovero({
           </div>
           {(kiinteistoveroTontti.jaettuTonttivero ?? 0) > 0 && (
             <div className="text-sm text-gray-500">
-              Kumpikin: {formatEuro((kiinteistoveroTontti.jaettuTonttivero ?? 0) / 2)}
+              {osapuolet[0].nimi}: {formatEuro((kiinteistoveroTontti.jaettuTonttivero ?? 0) * op1Pct)} /{' '}
+              {osapuolet[1].nimi}: {formatEuro((kiinteistoveroTontti.jaettuTonttivero ?? 0) * op2Pct)}
             </div>
           )}
         </div>

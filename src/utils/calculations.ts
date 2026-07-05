@@ -81,10 +81,10 @@ export function laskeTasaus(
   const op1MaapohjaVero = maapohjaVero * op1TonttiPct;
   const op2MaapohjaVero = maapohjaVero * op2TonttiPct;
 
-  // --- Jaettu tonttivero (Keskipelto) — 50/50 ---
+  // --- Jaettu tonttivero (Keskipelto) — jaetaan neliöosuuksien mukaan ---
   const jaettu = vuosiData.kiinteistoveroTontti.jaettuTonttivero ?? 0;
-  const op1JaettuTonttivero = jaettu * 0.5;
-  const op2JaettuTonttivero = jaettu * 0.5;
+  const op1JaettuTonttivero = jaettu * op1TonttiPct;
+  const op2JaettuTonttivero = jaettu * op2TonttiPct;
 
   // --- Rakennusverot ---
   const op1RakennusVero = vuosiData.rakennusverot
