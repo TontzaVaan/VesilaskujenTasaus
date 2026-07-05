@@ -39,8 +39,31 @@ function isHeic(file: File): boolean {
   );
 }
 
+async function skaalaaKuva(file: File): Promise<File> {
+  const MAX = 1500;
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      if (img.naturalWidth <= MAX && img.naturalHeight <= MAX) { resolve(file); return; }
+      const scale = Math.min(1, MAX / Math.max(img.naturalWidth, img.naturalHeight));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.naturalWidth * scale);
+      canvas.height = Math.round(img.naturalHeight * scale);
+      canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((b) => {
+        if (b) resolve(new File([b], file.name, { type: 'image/jpeg' }));
+        else resolve(file);
+      }, 'image/jpeg', 0.85);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 async function muunnaJaLisaa(file: File): Promise<File | null> {
-  if (!isHeic(file)) return file;
+  if (!isHeic(file)) return skaalaaKuva(file);
   const nimi = file.name.replace(/\.(heic|heif)$/i, '.jpg');
   // Ensin heic2any
   try {
@@ -54,10 +77,12 @@ async function muunnaJaLisaa(file: File): Promise<File | null> {
     const blob = await new Promise<Blob | null>((resolve) => {
       const img = new Image();
       img.onload = () => {
+        const MAX = 1500;
+        const scale = Math.min(1, MAX / Math.max(img.naturalWidth, img.naturalHeight));
         const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        canvas.getContext('2d')!.drawImage(img, 0, 0);
+        canvas.width = Math.round(img.naturalWidth * scale);
+        canvas.height = Math.round(img.naturalHeight * scale);
+        canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
         canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.85);
       };
       img.onerror = () => resolve(null);
