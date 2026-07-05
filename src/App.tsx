@@ -328,7 +328,7 @@ export default function App() {
                     onClick={() => setBulkImportAuki(true)}
                     className="text-sm text-purple-600 hover:text-purple-800 border border-purple-200 hover:border-purple-400 bg-purple-50 rounded-lg px-3 py-1"
                   >
-                    ✦ Analysoi laskuja
+                    ✦ Analysoi laskuja ja tilisiirtoja
                   </button>
                 )}
                 <span className="text-xs text-gray-500">Status:</span>

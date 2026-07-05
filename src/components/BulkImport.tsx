@@ -243,7 +243,7 @@ export default function BulkImport({ vuosi, vuosiData, osapuolet, onConfirm, onC
       <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800">Analysoi laskuja – {vuosi}</h2>
+          <h2 className="text-lg font-semibold text-gray-800">Analysoi laskuja ja tilisiirtoja – {vuosi}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
         </div>
 
