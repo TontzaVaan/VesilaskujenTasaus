@@ -869,87 +869,124 @@
       "vesilaskut": [
         {
           "kuukausi": 1,
-          "erapaiva": "",
-          "perusmaksu": 0,
-          "kayttomaksu": 0,
-          "kommentti": ""
+          "erapaiva": "2025-03-06",
+          "perusmaksu": 29.99,
+          "kayttomaksu": 117.75,
+          "kommentti": "Laskutusjaksolla 20.12.2024-31.01.2025",
+          "liitteet": [
+            "ef323664-9a1b-48c3-96ef-0197d5c9fc55"
+          ]
         },
         {
           "kuukausi": 2,
-          "erapaiva": "",
-          "perusmaksu": 0,
-          "kayttomaksu": 0,
-          "kommentti": ""
+          "erapaiva": "2025-03-04",
+          "perusmaksu": 22.32,
+          "kayttomaksu": 74.34,
+          "kommentti": "Laskun perusteella vesihiuollon palvelu ajalle 01.02.2025-28.02.2025",
+          "liitteet": [
+            "3af49794-2d21-47c3-aedd-e303539c5a30"
+          ]
         },
         {
           "kuukausi": 3,
-          "erapaiva": "",
-          "perusmaksu": 0,
-          "kayttomaksu": 0,
-          "kommentti": ""
+          "erapaiva": "2025-05-05",
+          "perusmaksu": 22.32,
+          "kayttomaksu": 84.96,
+          "kommentti": "Laskutusjaksо 01.03.2025 - 31.03.2025",
+          "liitteet": [
+            "5d2b03ea-024e-468e-b7f5-62c008e98291"
+          ]
         },
         {
           "kuukausi": 4,
-          "erapaiva": "",
-          "perusmaksu": 0,
-          "kayttomaksu": 0,
-          "kommentti": ""
+          "erapaiva": "2025-06-04",
+          "perusmaksu": 22.32,
+          "kayttomaksu": 81.42,
+          "kommentti": "Laskutusjaksolla 01.04.2025 - 30.04.2025",
+          "liitteet": [
+            "912c1a18-3370-47fb-849e-ea0bcf809d55"
+          ]
         },
         {
           "kuukausi": 5,
-          "erapaiva": "",
-          "perusmaksu": 0,
-          "kayttomaksu": 0,
-          "kommentti": ""
+          "erapaiva": "2025-07-03",
+          "perusmaksu": 22.32,
+          "kayttomaksu": 94.96,
+          "kommentti": "Laskun palvelun ajanjakso 01.05.2025 - 31.05.2025",
+          "liitteet": [
+            "89205a95-5109-4e05-b37a-3d5fdfbfa82f"
+          ]
         },
         {
           "kuukausi": 6,
-          "erapaiva": "",
-          "perusmaksu": 0,
-          "kayttomaksu": 0,
-          "kommentti": ""
+          "erapaiva": "2025-08-04",
+          "perusmaksu": 22.32,
+          "kayttomaksu": 81.42,
+          "kommentti": "Lasku kattaa jakson 01.06.2025 - 30.06.2025",
+          "liitteet": [
+            "aa4e36ca-a736-4d29-a63d-db3534724d30"
+          ]
         },
         {
           "kuukausi": 7,
-          "erapaiva": "",
+          "erapaiva": "2026-07-06",
           "perusmaksu": 0,
-          "kayttomaksu": 0,
-          "kommentti": ""
+          "kayttomaksu": 1181,
+          "kommentti": "Kaksi laskua näkyvissä. Ensimmäinen erääntymispäivällä 06.07.2026, summa 1 181,00 EUR. Toinen erääntymispäivällä 07.09.2026, summa 1 180,99 EUR.",
+          "liitteet": [
+            "0be88511-c546-49df-92bb-e70b47c1bf67"
+          ]
         },
         {
           "kuukausi": 8,
-          "erapaiva": "",
-          "perusmaksu": 0,
-          "kayttomaksu": 0,
-          "kommentti": ""
+          "erapaiva": "2025-10-15",
+          "perusmaksu": 22.32,
+          "kayttomaksu": 84.96,
+          "kommentti": "Laskun perusteella laskutusjakso 01.08.2025-31.08.2025. Perusmaksu (Perusmaksut) 22,32 € ja käyttömaksu (Käyttömaksut) 84,96 €.",
+          "liitteet": [
+            "1bb0f496-ad9e-40d2-a09a-6ec9194dc5c0"
+          ]
         },
         {
           "kuukausi": 9,
-          "erapaiva": "",
-          "perusmaksu": 0,
-          "kayttomaksu": 0,
-          "kommentti": ""
+          "erapaiva": "2025-11-04",
+          "perusmaksu": 22.32,
+          "kayttomaksu": 81.42,
+          "kommentti": "Laskun laskutusjakso 01.09.2025 - 30.09.2025",
+          "liitteet": [
+            "16bdd7fa-a15a-43cb-92d3-5ec35ef64972"
+          ]
         },
         {
           "kuukausi": 10,
-          "erapaiva": "",
-          "perusmaksu": 0,
-          "kayttomaksu": 0,
-          "kommentti": ""
+          "erapaiva": "2025-12-04",
+          "perusmaksu": 22.32,
+          "kayttomaksu": 84.96,
+          "kommentti": "Laskun kattama ajanjakso 01.10.2025 - 31.10.2025",
+          "liitteet": [
+            "1a0807ec-32a1-443a-8a5e-b6bbf2b5038d"
+          ]
         },
         {
           "kuukausi": 11,
-          "erapaiva": "",
-          "perusmaksu": 0,
-          "kayttomaksu": 0,
-          "kommentti": ""
+          "erapaiva": "2026-01-02",
+          "perusmaksu": 22.32,
+          "kayttomaksu": 81.42,
+          "kommentti": "Laskutuskausi 01.11.2025 - 30.11.2025",
+          "liitteet": [
+            "464ee36e-9127-4bd3-84a4-e592bcb13483"
+          ]
         },
         {
           "kuukausi": 12,
-          "erapaiva": "",
-          "perusmaksu": 0,
-          "kayttomaksu": 0,
-          "kommentti": ""
+          "erapaiva": "2026-02-04",
+          "perusmaksu": 18,
+          "kayttomaksu": 70.8,
+          "kommentti": "Laskun laskutuskausi 07.12.2025 - 31.12.2025",
+          "liitteet": [
+            "75bdaaec-6ad9-405f-a78c-7992f9787aa3",
+            "0bd302ae-b71f-4d9d-b362-40351aed5b7e"
+          ]
         }
       ],
       "mittarit": {
