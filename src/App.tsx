@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { useAppData } from './hooks/useAppData';
 import { tyhjaVuosiData } from './utils/storage';
 import { exportExcel, exportJSON, importJSON } from './utils/exportImport';
-import type { VuosiStatus } from './types';
+import type { VuosiStatus, Vesilasku, RakennusVero } from './types';
 import Maksut from './components/Maksut';
 import Vesilaskut from './components/Vesilaskut';
 import Vesikulutus from './components/Vesikulutus';
@@ -12,7 +12,9 @@ import Tasaus from './components/Tasaus';
 import Historia from './components/Historia';
 import Asetukset from './components/Asetukset';
 import GitHubSync from './components/GitHubSync';
+import BulkImport from './components/BulkImport';
 import { tunnistaDublikaatit } from './utils/calculations';
+import type { KiinteistoveroTulos } from './utils/invoiceAnalysis';
 
 type Valilehti = 'maksut' | 'vesilaskut' | 'vesikulutus' | 'kiinteistovero' | 'muut' | 'tasaus';
 
@@ -61,6 +63,7 @@ export default function App() {
   const [valilehti, setValilehti] = useState<Valilehti>('maksut');
   const [asetuksetAuki, setAsetuksetAuki] = useState(false);
   const [uusiVuosiInput, setUusiVuosiInput] = useState('');
+  const [bulkImportAuki, setBulkImportAuki] = useState(false);
 
   const vuodet = [...data.vuodet].sort((a, b) => a.vuosi - b.vuosi);
   const aktiivinen = typeof nakyma === 'number'
@@ -103,6 +106,67 @@ export default function App() {
   const paivitaStatus = (status: VuosiStatus) => {
     if (!aktiivinen) return;
     paivitaVuosi(aktiivinen.vuosi, { status });
+  };
+
+  const kasitteleBulkImport = (
+    vesilaskuPaivitykset: Partial<Vesilasku>[],
+    kiinteistoTulos: KiinteistoveroTulos | null,
+    liiteIdt: Record<string, string>
+  ) => {
+    if (!aktiivinen) return;
+
+    if (vesilaskuPaivitykset.length > 0) {
+      const uudetVesilaskut = aktiivinen.vesilaskut.map((v) => {
+        const paivitys = vesilaskuPaivitykset.find((p) => p.kuukausi === v.kuukausi);
+        if (!paivitys) return v;
+        const liiteId = liiteIdt[`vesilasku-${v.kuukausi}`];
+        return {
+          ...v,
+          ...paivitys,
+          liitteet: liiteId ? [...(v.liitteet ?? []), liiteId] : v.liitteet,
+        };
+      });
+      paivitaVuosi(aktiivinen.vuosi, { vesilaskut: uudetVesilaskut });
+    }
+
+    if (kiinteistoTulos) {
+      const liiteId = liiteIdt['kiinteistovero'];
+      const uusiTontti = {
+        ...aktiivinen.kiinteistoveroTontti,
+        ...(kiinteistoTulos.maapohjaVero > 0 ? { maapohjaVero: kiinteistoTulos.maapohjaVero } : {}),
+        liitteet: liiteId
+          ? [...(aktiivinen.kiinteistoveroTontti.liitteet ?? []), liiteId]
+          : aktiivinen.kiinteistoveroTontti.liitteet,
+      };
+      const olemassaOlevat = [...aktiivinen.rakennusverot];
+      const uudetRakennukset = kiinteistoTulos.rakennukset.map((r) => {
+        const osapuoliId = r.omistajaAvain === 'op1'
+          ? data.osapuolet[0].id
+          : r.omistajaAvain === 'op2'
+          ? data.osapuolet[1].id
+          : data.osapuolet[0].id;
+        const matchIdx = olemassaOlevat.findIndex(
+          (o) => o.nimi.toLowerCase().includes(r.nimi.toLowerCase().slice(0, 6))
+        );
+        if (matchIdx >= 0) {
+          const p = { ...olemassaOlevat[matchIdx], maara: r.maara };
+          olemassaOlevat[matchIdx] = p;
+          return null;
+        }
+        return {
+          id: crypto.randomUUID(),
+          nimi: r.nimi,
+          omistajaId: osapuoliId,
+          maara: r.maara,
+        };
+      }).filter(Boolean);
+      paivitaVuosi(aktiivinen.vuosi, {
+        kiinteistoveroTontti: uusiTontti,
+        rakennusverot: [...olemassaOlevat, ...(uudetRakennukset as RakennusVero[])],
+      });
+    }
+
+    setBulkImportAuki(false);
   };
 
   return (
@@ -233,6 +297,14 @@ export default function App() {
                 ))}
               </div>
               <div className="flex items-center gap-2 ml-4 pb-1">
+                {!lukittu && (
+                  <button
+                    onClick={() => setBulkImportAuki(true)}
+                    className="text-sm text-purple-600 hover:text-purple-800 border border-purple-200 hover:border-purple-400 bg-purple-50 rounded-lg px-3 py-1"
+                  >
+                    ✦ Analysoi laskuja
+                  </button>
+                )}
                 <span className="text-xs text-gray-500">Status:</span>
                 <div className="relative">
                   <select
@@ -319,6 +391,16 @@ export default function App() {
           <span>Tuonti epäonnistui: {importVirhe}</span>
           <button onClick={() => setImportVirhe(null)} className="text-red-400 hover:text-red-600 text-lg leading-none">×</button>
         </div>
+      )}
+
+      {bulkImportAuki && aktiivinen && (
+        <BulkImport
+          vuosi={aktiivinen.vuosi}
+          vuosiData={aktiivinen}
+          osapuolet={data.osapuolet}
+          onConfirm={kasitteleBulkImport}
+          onClose={() => setBulkImportAuki(false)}
+        />
       )}
 
       {asetuksetAuki && (

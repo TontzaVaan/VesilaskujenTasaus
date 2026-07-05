@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { AppData } from '../types';
+import { ANTHROPIC_KEY_STORAGE_KEY } from '../utils/invoiceAnalysis';
 
 interface Props {
   appData: AppData;
@@ -15,6 +16,9 @@ export default function Asetukset({ appData, onSave, onClose }: Props) {
   const [kiinteistoveroProsentti, setKiinteistoveroProsentti] = useState<number | ''>(
     appData.tontti.op1KiinteistoveroProsentti ?? ''
   );
+  const [anthropicKey, setAnthropicKey] = useState(
+    () => localStorage.getItem(ANTHROPIC_KEY_STORAGE_KEY) ?? ''
+  );
 
   const tallenna = () => {
     onSave(
@@ -29,6 +33,11 @@ export default function Asetukset({ appData, onSave, onClose }: Props) {
           kiinteistoveroProsentti === '' ? undefined : kiinteistoveroProsentti,
       }
     );
+    if (anthropicKey.trim()) {
+      localStorage.setItem(ANTHROPIC_KEY_STORAGE_KEY, anthropicKey.trim());
+    } else {
+      localStorage.removeItem(ANTHROPIC_KEY_STORAGE_KEY);
+    }
     onClose();
   };
 
@@ -139,6 +148,22 @@ export default function Asetukset({ appData, onSave, onClose }: Props) {
             </div>
           </div>
         </div>
+
+          <div className="border-t border-gray-200 pt-4">
+            <h3 className="text-sm font-medium text-gray-700 mb-1">
+              Anthropic API-avain (laskujen automaattinen tunnistus)
+            </h3>
+            <p className="text-xs text-gray-500 mb-2">
+              Tarvitaan laskujen analysoinnissa. Tallennetaan vain paikallisesti selaimen muistiin.
+            </p>
+            <input
+              type="password"
+              value={anthropicKey}
+              onChange={(e) => setAnthropicKey(e.target.value)}
+              placeholder="sk-ant-..."
+              className="border border-gray-300 rounded-lg px-3 py-2 w-full font-mono text-sm"
+            />
+          </div>
 
         <div className="flex justify-end gap-2 mt-6">
           <button
