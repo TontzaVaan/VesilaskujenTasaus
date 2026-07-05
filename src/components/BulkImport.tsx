@@ -41,14 +41,32 @@ function isHeic(file: File): boolean {
 
 async function muunnaJaLisaa(file: File): Promise<File | null> {
   if (!isHeic(file)) return file;
+  const nimi = file.name.replace(/\.(heic|heif)$/i, '.jpg');
+  // Ensin heic2any
   try {
     const result = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
     const blob = Array.isArray(result) ? result[0] : result;
-    const nimi = file.name.replace(/\.(heic|heif)$/i, '.jpg');
     return new File([blob], nimi, { type: 'image/jpeg' });
-  } catch {
-    return null;
-  }
+  } catch { /* fall through */ }
+  // Canvas-fallback: toimii Safarissa ja Chromessa (macOS natiivi HEIC-tuki)
+  try {
+    const url = URL.createObjectURL(file);
+    const blob = await new Promise<Blob | null>((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        canvas.getContext('2d')!.drawImage(img, 0, 0);
+        canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.85);
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+    URL.revokeObjectURL(url);
+    if (blob) return new File([blob], nimi, { type: 'image/jpeg' });
+  } catch { /* fall through */ }
+  return null;
 }
 
 export default function BulkImport({ vuosi, vuosiData, osapuolet, onConfirm, onClose }: Props) {
